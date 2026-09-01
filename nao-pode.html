@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, viewport-fit=cover">
+<title>NÃO PODE — jogo de cartas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,900;1,9..144,700;1,9..144,900&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-1:#170B33;
+    --bg-2:#3C1E6E;
+    --card:#FFF6E9;
+    --card-edge:#EDE0C8;
+    --ink:#1A1023;
+    --accent:#FF5B4C;
+    --accent-ink:#7A130A;
+    --accent-2:#FFC145;
+    --muted:#8578A0;
+    --paper-shadow: 0 30px 60px -20px rgba(9,4,26,0.65), 0 10px 25px -12px rgba(9,4,26,0.5);
+  }
+
+  *{ box-sizing:border-box; }
+
+  html,body{
+    margin:0;
+    padding:0;
+    min-height:100%;
+    background:
+      radial-gradient(120% 90% at 50% -10%, var(--bg-2) 0%, var(--bg-1) 60%);
+    color:var(--ink);
+    font-family:'Space Grotesk', sans-serif;
+    overflow-x:hidden;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ animation-duration:0.001ms !important; transition-duration:0.001ms !important; }
+  }
+
+  .stage{
+    min-height:100vh;
+    min-height:100dvh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:flex-start;
+    padding: max(18px, env(safe-area-inset-top)) 18px max(28px, env(safe-area-inset-bottom));
+    gap:22px;
+  }
+
+  .view{ display:none; width:100%; flex-direction:column; align-items:center; gap:22px; }
+  .view.active{ display:flex; }
+
+  /* ---------- Logo ---------- */
+  .brand{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:2px;
+    margin-top:6px;
+    user-select:none;
+  }
+  .brand-mark{
+    font-family:'Fraunces', serif;
+    font-weight:900;
+    font-style:italic;
+    font-size:clamp(30px, 8vw, 40px);
+    letter-spacing:-0.01em;
+    color:#FFF6E9;
+    transform: rotate(-3deg);
+    line-height:1;
+  }
+  .brand-mark .dot{ color:var(--accent); }
+  .brand-sub{
+    font-size:11px;
+    letter-spacing:0.14em;
+    color:var(--muted);
+    font-weight:600;
+  }
+
+  /* ---------- Start / End screens ---------- */
+  .center-panel{
+    width:100%;
+    max-width:420px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:22px;
+    text-align:center;
+    margin:4vh 0 0;
+  }
+  .panel-text{
+    color:#E7DEF8;
+    font-size:10.5px;
+    line-height:1.4;
+    max-width:300px;
+    opacity:0.45;
+    letter-spacing:0.02em;
+  }
+
+  .rules-box{
+    width:100%;
+    background:rgba(255,255,255,0.05);
+    border:1px solid rgba(255,255,255,0.12);
+    border-radius:20px;
+    padding:20px 20px 18px;
+    text-align:left;
+  }
+  .rules-title{
+    text-align:center;
+    font-size:11.5px;
+    font-weight:700;
+    letter-spacing:0.18em;
+    color:var(--accent-2);
+    margin-bottom:14px;
+  }
+  .rules-list{
+    list-style:none;
+    margin:0;
+    padding:0;
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+  }
+  .rules-list li{
+    display:flex;
+    align-items:flex-start;
+    gap:10px;
+    color:#EEE6FA;
+    font-size:13.5px;
+    line-height:1.4;
+  }
+  .rules-list strong{ color:#FFF6E9; }
+  .rule-num{
+    flex:0 0 auto;
+    width:20px;
+    height:20px;
+    border-radius:50%;
+    background:var(--accent);
+    color:#FFF6E9;
+    font-size:11px;
+    font-weight:700;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    margin-top:1px;
+  }
+  .big-btn{
+    width:100%;
+    border:none;
+    cursor:pointer;
+    background:var(--accent);
+    color:#FFF6E9;
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:700;
+    font-size:18px;
+    letter-spacing:0.02em;
+    padding:20px 20px;
+    border-radius:18px;
+    box-shadow: 0 12px 24px -10px rgba(255,91,76,0.55);
+    transition: transform 120ms ease, box-shadow 120ms ease;
+  }
+  .big-btn:active{ transform: scale(0.97); box-shadow: 0 6px 14px -8px rgba(255,91,76,0.5); }
+  .big-btn:focus-visible{ outline: 3px solid var(--accent-2); outline-offset:3px; }
+
+  .ghost-btn{
+    width:100%;
+    border:2px solid rgba(255,255,255,0.18);
+    cursor:pointer;
+    background:transparent;
+    color:#E7DEF8;
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:600;
+    font-size:14px;
+    padding:14px 18px;
+    border-radius:16px;
+  }
+  .ghost-btn:active{ transform: scale(0.98); }
+
+  .score-card{
+    background:var(--card);
+    border-radius:24px;
+    padding:34px 26px;
+    box-shadow:var(--paper-shadow);
+    width:100%;
+    text-align:center;
+  }
+  .score-label{
+    font-size:12px;
+    letter-spacing:0.14em;
+    color:var(--muted);
+    font-weight:700;
+    margin-bottom:8px;
+  }
+  .score-number{
+    font-family:'Fraunces', serif;
+    font-weight:900;
+    font-size:clamp(56px, 20vw, 80px);
+    color:var(--ink);
+    line-height:1;
+  }
+  .score-sub{
+    margin-top:10px;
+    font-size:13px;
+    color:var(--muted);
+    font-weight:600;
+  }
+
+  /* ---------- Timer ---------- */
+  .timer-chip{
+    font-family:'Fraunces', serif;
+    font-weight:900;
+    font-size:22px;
+    color:#FFF6E9;
+    background:rgba(255,255,255,0.08);
+    border:1px solid rgba(255,255,255,0.15);
+    padding:8px 20px;
+    border-radius:999px;
+    letter-spacing:0.02em;
+    transition: color 150ms ease, background 150ms ease, border-color 150ms ease;
+  }
+  .timer-chip.low{
+    color:var(--accent);
+    background:rgba(255,91,76,0.12);
+    border-color:rgba(255,91,76,0.4);
+  }
+
+  /* ---------- Card zone ---------- */
+  .card-zone{
+    width:100%;
+    max-width:420px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    perspective:1200px;
+  }
+
+  .card{
+    position:relative;
+    width:100%;
+    background:var(--card);
+    border-radius:26px;
+    padding:30px 24px 26px;
+    box-shadow:var(--paper-shadow);
+    border:1px solid var(--card-edge);
+    will-change:transform, opacity;
+  }
+
+  .card::before{
+    content:"";
+    position:absolute;
+    top:0; right:0;
+    width:34px; height:34px;
+    background:
+      linear-gradient(135deg, transparent 49.5%, var(--bg-1) 50%),
+      linear-gradient(315deg, var(--card-edge) 49.5%, transparent 50%);
+    border-radius: 0 26px 0 8px;
+  }
+
+  .card-eyebrow{
+    text-align:center;
+    font-size:11px;
+    letter-spacing:0.16em;
+    color:var(--muted);
+    font-weight:600;
+    margin-bottom:8px;
+  }
+
+  .card-word{
+    font-family:'Fraunces', serif;
+    font-weight:900;
+    text-align:center;
+    font-size:clamp(22px, 7vw, 32px);
+    line-height:1.08;
+    letter-spacing:-0.005em;
+    color:var(--ink);
+    padding:4px 2px 18px;
+    overflow-wrap:break-word;
+    hyphens:auto;
+  }
+
+  .perforation{
+    position:relative;
+    height:1px;
+    margin:0 -24px 18px;
+    background-image: repeating-linear-gradient(to right, var(--card-edge) 0 10px, transparent 10px 18px);
+  }
+  .perforation::before, .perforation::after{
+    content:"";
+    position:absolute;
+    top:-9px;
+    width:18px; height:18px;
+    border-radius:50%;
+    background:var(--bg-1);
+  }
+  .perforation::before{ left:-9px; }
+  .perforation::after{ right:-9px; }
+
+  .forbidden-label{
+    text-align:center;
+    font-size:12px;
+    font-weight:700;
+    letter-spacing:0.08em;
+    color:var(--accent-ink);
+    margin-bottom:12px;
+  }
+
+  .forbidden-list{
+    list-style:none;
+    margin:0;
+    padding:0;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+  }
+
+  .forbidden-list li{
+    display:flex;
+    align-items:center;
+    gap:11px;
+    font-size:clamp(14.5px, 4.2vw, 17px);
+    font-weight:600;
+    color:var(--ink);
+    background: rgba(255,91,76,0.06);
+    border-radius:12px;
+    padding:9px 13px;
+  }
+
+  .ban-bar{
+    flex:0 0 auto;
+    width:18px;
+    height:4px;
+    border-radius:2px;
+    background:var(--accent);
+    transform:rotate(-8deg);
+  }
+
+  .card.leaving{ animation: cardLeave 260ms ease-in forwards; }
+  .card.entering{ animation: cardEnter 320ms cubic-bezier(.2,.8,.3,1.05) forwards; }
+  @keyframes cardLeave{ to{ transform: translateX(-16%) rotate(-6deg); opacity:0; } }
+  @keyframes cardEnter{
+    from{ transform: translateX(16%) rotate(6deg); opacity:0; }
+    to{ transform: translateX(0) rotate(0); opacity:1; }
+  }
+
+  /* ---------- Footer / controls ---------- */
+  .controls{
+    width:100%;
+    max-width:420px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:10px;
+  }
+
+  .btn-row{
+    width:100%;
+    display:flex;
+    gap:10px;
+  }
+
+  .next-btn{
+    flex:1;
+    border:none;
+    cursor:pointer;
+    background:var(--accent);
+    color:#FFF6E9;
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:700;
+    font-size:16px;
+    letter-spacing:0.01em;
+    padding:17px 16px;
+    border-radius:18px;
+    box-shadow: 0 12px 24px -10px rgba(255,91,76,0.55);
+    transition: transform 120ms ease, box-shadow 120ms ease;
+  }
+  .next-btn:active{ transform: scale(0.97); box-shadow: 0 6px 14px -8px rgba(255,91,76,0.5); }
+  .next-btn:focus-visible{ outline: 3px solid var(--accent-2); outline-offset:3px; }
+
+  .end-btn{
+    flex:0 0 auto;
+    width:74px;
+    border:2px solid rgba(255,255,255,0.22);
+    cursor:pointer;
+    background:rgba(255,255,255,0.05);
+    color:#E7DEF8;
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:700;
+    font-size:13px;
+    letter-spacing:0.04em;
+    border-radius:18px;
+  }
+  .end-btn:active{ transform: scale(0.96); }
+
+  .progress{
+    font-size:12px;
+    color:var(--muted);
+    letter-spacing:0.04em;
+  }
+  .progress b{ color:#D8CCEF; font-weight:600; }
+</style>
+</head>
+<body>
+
+<div class="stage">
+  <div class="brand">
+    <div class="brand-mark">NÃO PODE<span class="dot">.</span></div>
+    <div class="brand-sub">O JOGO DA DICA IMPOSSÍVEL</div>
+  </div>
+
+  <!-- TELA INICIAL -->
+  <div class="view active" id="view-start">
+    <div class="center-panel">
+      <div class="rules-box">
+        <div class="rules-title">REGRAS</div>
+        <ul class="rules-list">
+          <li><span class="rule-num">1</span><span class="rule-text">Não vale falar a palavra em outro idioma.</span></li>
+          <li><span class="rule-num">2</span><span class="rule-text">Não vale falar a palavra no diminutivo.</span></li>
+          <li><span class="rule-num">3</span><span class="rule-text">Não vale falar nenhuma parte da palavra principal.</span></li>
+          <li><span class="rule-num">4</span><span class="rule-text">Você tem <strong>1 minuto</strong> para acertar o máximo de cartas possível.</span></li>
+        </ul>
+      </div>
+      <button class="big-btn" id="startBtn">INICIAR</button>
+      <div class="panel-text">500 cartas · 5 palavras proibidas em cada</div>
+    </div>
+  </div>
+
+  <!-- TELA DO JOGO -->
+  <div class="view" id="view-game">
+    <div class="timer-chip" id="timerChip">1:00</div>
+    <div class="card-zone">
+      <div class="card" id="card">
+        <div class="card-eyebrow">SUA PALAVRA É</div>
+        <div class="card-word" id="palavra">CARREGANDO</div>
+        <div class="perforation"></div>
+        <div class="forbidden-label">NÃO PODE FALAR</div>
+        <ul class="forbidden-list" id="proibidas"></ul>
+      </div>
+    </div>
+
+    <div class="controls">
+      <div class="btn-row">
+        <button class="next-btn" id="nextBtn">PRÓXIMA CARTA</button>
+        <button class="end-btn" id="endBtn">FIM</button>
+      </div>
+      <div class="progress">Cartas jogadas: <b id="cardCount">1</b></div>
+    </div>
+  </div>
+
+  <!-- TELA DE FIM -->
+  <div class="view" id="view-end">
+    <div class="center-panel">
+      <div class="score-card">
+        <div class="score-label">CARTAS JOGADAS NA RODADA</div>
+        <div class="score-number" id="finalCount">0</div>
+        <div class="score-sub">continuem contando quantas a equipe acertou!</div>
+      </div>
+      <button class="big-btn" id="playAgainBtn">JOGAR NOVAMENTE</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =========================================================================
+   NÃO PODE — motor do jogo
+   Organizado em módulos simples para que versões futuras (jogadores,
+   equipes, cronômetro, pontuação por acerto/erro, rodadas, vidas,
+   dificuldade, categorias, modo online) possam ser plugadas sem reescrever
+   o núcleo.
+   ========================================================================= */
+
+/* -------------------------------------------------------------------------
+   1) DADOS — banco de 500 cartas.
+   Cada carta: { palavra, proibidas: [5 itens], categoria }
+   ------------------------------------------------------------------------- */
+const CARDS = [{"palavra": "PIZZA", "proibidas": ["QUEIJO", "FATIA", "FORNO", "MUSSARELA", "BORDA"], "categoria": "comida"}, {"palavra": "FEIJOADA", "proibidas": ["FEIJÃO", "CARNE", "ARROZ", "PORCO", "PANELA"], "categoria": "comida"}, {"palavra": "CHURRASCO", "proibidas": ["CARNE", "CHURRASQUEIRA", "ESPETO", "FOGO", "BRASA"], "categoria": "comida"}, {"palavra": "PÃO DE QUEIJO", "proibidas": ["MINAS", "FORNO", "POLVILHO", "BOLINHA", "PADARIA"], "categoria": "comida"}, {"palavra": "BRIGADEIRO", "proibidas": ["CHOCOLATE", "DOCE", "FESTA", "GRANULADO", "COLHER"], "categoria": "comida"}, {"palavra": "COXINHA", "proibidas": ["FRANGO", "SALGADO", "FRITURA", "FESTA", "BOTECO"], "categoria": "comida"}, {"palavra": "LASANHA", "proibidas": ["MASSA", "QUEIJO", "FORNO", "MOLHO", "BANDEJA"], "categoria": "comida"}, {"palavra": "PASTEL", "proibidas": ["FEIRA", "FRITO", "RECHEIO", "MASSA", "CALDO DE CANA"], "categoria": "comida"}, {"palavra": "AÇAÍ", "proibidas": ["GELADO", "GRANOLA", "ROXO", "COPO", "TIGELA"], "categoria": "comida"}, {"palavra": "TAPIOCA", "proibidas": ["GOMA", "RECHEIO", "NORDESTE", "CHAPA", "MANTEIGA"], "categoria": "comida"}, {"palavra": "SUSHI", "proibidas": ["PEIXE", "JAPONÊS", "ARROZ", "WASABI", "HASHI"], "categoria": "comida"}, {"palavra": "HAMBÚRGUER", "proibidas": ["PÃO", "CARNE", "LANCHE", "BATATA FRITA", "MOLHO"], "categoria": "comida"}, {"palavra": "CAIPIRINHA", "proibidas": ["CACHAÇA", "LIMÃO", "GELO", "AÇÚCAR", "BOTECO"], "categoria": "bebida"}, {"palavra": "CAFÉZINHO", "proibidas": ["XÍCARA", "COADOR", "AÇÚCAR", "MANHÃ", "PADARIA"], "categoria": "bebida"}, {"palavra": "CERVEJA", "proibidas": ["GELADA", "BAR", "ESPUMA", "GARRAFA", "CHOPP"], "categoria": "bebida"}, {"palavra": "SUCO", "proibidas": ["FRUTA", "COPO", "LIQUIDIFICADOR", "GELADO", "CANUDO"], "categoria": "bebida"}, {"palavra": "GUARANÁ", "proibidas": ["REFRIGERANTE", "ANTARCTICA", "GARRAFA", "DOCE", "FESTA"], "categoria": "bebida"}, {"palavra": "VINHO", "proibidas": ["TAÇA", "UVA", "ROLHA", "ADEGA", "QUEIJO"], "categoria": "bebida"}, {"palavra": "CACHORRO", "proibidas": ["CÃO", "ANIMAL", "LATIR", "DONO", "COLEIRA"], "categoria": "animal"}, {"palavra": "GATO", "proibidas": ["MIADO", "BIGODE", "ARRANHAR", "RONRONAR", "BOLA DE PELO"], "categoria": "animal"}, {"palavra": "ELEFANTE", "proibidas": ["TROMBA", "GRANDE", "CIRCO", "ÁFRICA", "MEMÓRIA"], "categoria": "animal"}, {"palavra": "GIRAFA", "proibidas": ["PESCOÇO", "ALTA", "MANCHAS", "SAVANA", "FOLHAS"], "categoria": "animal"}, {"palavra": "JACARÉ", "proibidas": ["PÂNTANO", "DENTE", "RÉPTIL", "LAGOA", "BOCA"], "categoria": "animal"}, {"palavra": "PAPAGAIO", "proibidas": ["FALAR", "PENAS", "GAIOLA", "BICO", "REPETIR"], "categoria": "animal"}, {"palavra": "TUCANO", "proibidas": ["BICO", "AMAZÔNIA", "PENAS", "COLORIDO", "FLORESTA"], "categoria": "animal"}, {"palavra": "ONÇA-PINTADA", "proibidas": ["FLORESTA", "FELINO", "CAÇADORA", "MANCHAS", "PANTANAL"], "categoria": "animal"}, {"palavra": "TARTARUGA", "proibidas": ["CASCO", "LENTA", "MAR", "JABUTI", "PRAIA"], "categoria": "animal"}, {"palavra": "MÉDICO", "proibidas": ["HOSPITAL", "JALECO", "PACIENTE", "RECEITA", "ESTETOSCÓPIO"], "categoria": "profissao"}, {"palavra": "PROFESSOR", "proibidas": ["ESCOLA", "QUADRO", "ALUNO", "GIZ", "CADERNO"], "categoria": "profissao"}, {"palavra": "BOMBEIRO", "proibidas": ["INCÊNDIO", "MANGUEIRA", "CAMINHÃO", "RESGATE", "SIRENE"], "categoria": "profissao"}, {"palavra": "POLICIAL", "proibidas": ["VIATURA", "FARDA", "ALGEMA", "DELEGACIA", "SIRENE"], "categoria": "profissao"}, {"palavra": "DENTISTA", "proibidas": ["DENTE", "CONSULTÓRIO", "BROCA", "CÁRIE", "ANESTESIA"], "categoria": "profissao"}, {"palavra": "CABELEIREIRO", "proibidas": ["TESOURA", "CORTE", "SALÃO", "SECADOR", "ESPELHO"], "categoria": "profissao"}, {"palavra": "ADVOGADO", "proibidas": ["PROCESSO", "TRIBUNAL", "JUIZ", "LEI", "CONTRATO"], "categoria": "profissao"}, {"palavra": "COZINHEIRO", "proibidas": ["PANELA", "FOGÃO", "RECEITA", "RESTAURANTE", "AVENTAL"], "categoria": "profissao"}, {"palavra": "PRAIA", "proibidas": ["MAR", "AREIA", "SOL", "FÉRIAS", "BIQUÍNI"], "categoria": "lugar"}, {"palavra": "AEROPORTO", "proibidas": ["AVIÃO", "BAGAGEM", "EMBARQUE", "PASSAGEM", "PISTA"], "categoria": "lugar"}, {"palavra": "HOSPITAL", "proibidas": ["MÉDICO", "MACA", "ENFERMEIRA", "REMÉDIO", "AMBULÂNCIA"], "categoria": "lugar"}, {"palavra": "IGREJA", "proibidas": ["PADRE", "MISSA", "BANCO", "ORAÇÃO", "SINO"], "categoria": "lugar"}, {"palavra": "SUPERMERCADO", "proibidas": ["CARRINHO", "CAIXA", "PRATELEIRA", "COMPRAS", "ETIQUETA"], "categoria": "lugar"}, {"palavra": "PADARIA", "proibidas": ["PÃO", "BALCÃO", "BOLO", "DOCE", "FORNO"], "categoria": "lugar"}, {"palavra": "FAZENDA", "proibidas": ["VACA", "TRATOR", "CELEIRO", "ROÇA", "CERCA"], "categoria": "lugar"}, {"palavra": "RIO DE JANEIRO", "proibidas": ["PRAIA", "CARNAVAL", "CRISTO", "CARIOCA", "COPACABANA"], "categoria": "cidade"}, {"palavra": "SÃO PAULO", "proibidas": ["PAULISTA", "TRÂNSITO", "PRÉDIOS", "AVENIDA", "METRÔ"], "categoria": "cidade"}, {"palavra": "SALVADOR", "proibidas": ["BAHIA", "PELOURINHO", "AXÉ", "ACARAJÉ", "LADEIRA"], "categoria": "cidade"}, {"palavra": "RECIFE", "proibidas": ["PERNAMBUCO", "PONTES", "FREVO", "PRAIA", "MARACATU"], "categoria": "cidade"}, {"palavra": "MANAUS", "proibidas": ["AMAZONAS", "RIO NEGRO", "FLORESTA", "TEATRO", "ENCONTRO DAS ÁGUAS"], "categoria": "cidade"}, {"palavra": "OURO PRETO", "proibidas": ["MINAS", "HISTÓRICA", "IGREJAS", "LADEIRA", "BARROCO"], "categoria": "cidade"}, {"palavra": "BRASIL", "proibidas": ["CARNAVAL", "FUTEBOL", "SAMBA", "VERDE E AMARELO", "PENTACAMPEÃO"], "categoria": "pais"}, {"palavra": "ARGENTINA", "proibidas": ["HERMANOS", "TANGO", "MESSI", "FRONTEIRA", "CHURRASCO"], "categoria": "pais"}, {"palavra": "FRANÇA", "proibidas": ["TORRE EIFFEL", "PARIS", "BAGUETE", "VINHO", "QUEIJO"], "categoria": "pais"}, {"palavra": "ITÁLIA", "proibidas": ["MASSA", "PIZZA", "ROMA", "BOTA", "MACARRÃO"], "categoria": "pais"}, {"palavra": "JAPÃO", "proibidas": ["SUSHI", "SAMURAI", "TÓQUIO", "ANIME", "QUIMONO"], "categoria": "pais"}, {"palavra": "ESTADOS UNIDOS", "proibidas": ["AMERICANO", "HAMBÚRGUER", "HOLLYWOOD", "DÓLAR", "BANDEIRA"], "categoria": "pais"}, {"palavra": "PORTUGAL", "proibidas": ["LISBOA", "BACALHAU", "FADO", "PASTEL DE NATA", "AZULEJO"], "categoria": "pais"}, {"palavra": "FUTEBOL", "proibidas": ["BOLA", "GOL", "CAMPO", "TIME", "JUIZ"], "categoria": "esporte"}, {"palavra": "VÔLEI", "proibidas": ["REDE", "SAQUE", "QUADRA", "LEVANTADOR", "JOGADOR"], "categoria": "esporte"}, {"palavra": "NATAÇÃO", "proibidas": ["PISCINA", "ÁGUA", "TOUCA", "NADADOR", "RAIA"], "categoria": "esporte"}, {"palavra": "SURFE", "proibidas": ["ONDA", "PRANCHA", "MAR", "VERÃO", "BIQUÍNI"], "categoria": "esporte"}, {"palavra": "CAPOEIRA", "proibidas": ["RODA", "BERIMBAU", "GINGA", "LUTA", "ATABAQUE"], "categoria": "esporte"}, {"palavra": "SKATE", "proibidas": ["RODAS", "RAMPA", "MANOBRA", "TÊNIS", "CALÇADA"], "categoria": "esporte"}, {"palavra": "BOXE", "proibidas": ["LUVA", "RINGUE", "SOCO", "NOCAUTE", "TREINO"], "categoria": "esporte"}, {"palavra": "TITANIC", "proibidas": ["NAVIO", "ICEBERG", "AFUNDAR", "JACK", "OCEANO"], "categoria": "filme"}, {"palavra": "VINGADORES", "proibidas": ["HERÓIS", "MARVEL", "BATALHA", "THANOS", "CAPITÃO"], "categoria": "filme"}, {"palavra": "TOY STORY", "proibidas": ["BRINQUEDOS", "WOODY", "ANIMAÇÃO", "PIXAR", "BUZZ"], "categoria": "filme"}, {"palavra": "CIDADE DE DEUS", "proibidas": ["FAVELA", "ROCINHA", "CRIME", "ZÉ PEQUENO", "TIRO"], "categoria": "filme"}, {"palavra": "HARRY POTTER", "proibidas": ["MÁGICA", "VARINHA", "HOGWARTS", "BRUXO", "FEITIÇO"], "categoria": "filme"}, {"palavra": "REI LEÃO", "proibidas": ["SAVANA", "SIMBA", "MUFASA", "DISNEY", "HAKUNA MATATA"], "categoria": "filme"}, {"palavra": "STAR WARS", "proibidas": ["SABRE DE LUZ", "JEDI", "ESPAÇO", "FORÇA", "NAVE"], "categoria": "filme"}, {"palavra": "CHAPEUZINHO VERMELHO", "proibidas": ["LOBO", "CESTA", "VOVÓ", "FLORESTA", "CAÇADOR"], "categoria": "personagem"}, {"palavra": "BATMAN", "proibidas": ["MORCEGO", "GOTHAM", "CAPA", "BATMÓVEL", "ROBIN"], "categoria": "personagem"}, {"palavra": "HOMEM-ARANHA", "proibidas": ["TEIA", "PETER PARKER", "NOVA YORK", "MÁSCARA", "VILÃO"], "categoria": "personagem"}, {"palavra": "MÔNICA", "proibidas": ["COELHO", "DENTE", "CEBOLINHA", "TURMA", "LAÇO"], "categoria": "personagem"}, {"palavra": "PICA-PAU", "proibidas": ["BICO", "ÁRVORE", "RISADA", "DESENHO", "FLORESTA"], "categoria": "personagem"}, {"palavra": "CASCÃO", "proibidas": ["SUJEIRA", "BANHO", "POEIRA", "MÔNICA", "PREGUIÇA"], "categoria": "personagem"}, {"palavra": "PELÉ", "proibidas": ["FUTEBOL", "REI", "CAMISA 10", "BRASIL", "COPA DO MUNDO"], "categoria": "celebridade"}, {"palavra": "NEYMAR", "proibidas": ["FUTEBOL", "DRIBLE", "SELEÇÃO", "CRAQUE", "CHUTEIRA"], "categoria": "celebridade"}, {"palavra": "XUXA", "proibidas": ["LOIRA", "TV", "PAQUITA", "CRIANÇAS", "BAÚ"], "categoria": "celebridade"}, {"palavra": "ANITTA", "proibidas": ["FUNK", "CANTORA", "BAILE", "POP", "SHOW"], "categoria": "celebridade"}, {"palavra": "RONALDINHO GAÚCHO", "proibidas": ["SORRISO", "DRIBLE", "FUTEBOL", "BOLA", "ALEGRIA"], "categoria": "celebridade"}, {"palavra": "CELULAR", "proibidas": ["TELEFONE", "WHATSAPP", "LIGAÇÃO", "TELA", "APLICATIVO"], "categoria": "tecnologia"}, {"palavra": "COMPUTADOR", "proibidas": ["TECLADO", "MOUSE", "TELA", "INTERNET", "PROGRAMA"], "categoria": "tecnologia"}, {"palavra": "IMPRESSORA", "proibidas": ["PAPEL", "TINTA", "IMPRIMIR", "ESCANEAR", "SCANNER"], "categoria": "tecnologia"}, {"palavra": "FONE DE OUVIDO", "proibidas": ["MÚSICA", "ORELHA", "BLUETOOTH", "SOM", "PLAYLIST"], "categoria": "tecnologia"}, {"palavra": "CARREGADOR", "proibidas": ["BATERIA", "TOMADA", "CABO", "PILHA", "FIO"], "categoria": "tecnologia"}, {"palavra": "CÂMERA", "proibidas": ["FOTO", "LENTE", "FLASH", "ZOOM", "SELFIE"], "categoria": "tecnologia"}, {"palavra": "ROBÔ", "proibidas": ["MÁQUINA", "METAL", "INTELIGÊNCIA", "AUTOMÁTICO", "PARAFUSO"], "categoria": "tecnologia"}, {"palavra": "WHATSAPP", "proibidas": ["MENSAGEM", "ÁUDIO", "GRUPO", "EMOJI", "CONTATO"], "categoria": "internet"}, {"palavra": "INSTAGRAM", "proibidas": ["FOTO", "STORIES", "CURTIDA", "SEGUIDOR", "FILTRO"], "categoria": "internet"}, {"palavra": "YOUTUBE", "proibidas": ["VÍDEO", "CANAL", "INSCRITO", "PLAY", "COMENTÁRIO"], "categoria": "internet"}, {"palavra": "SENHA", "proibidas": ["LOGIN", "SEGREDO", "TECLADO", "ESQUECER", "CADEADO"], "categoria": "internet"}, {"palavra": "WI-FI", "proibidas": ["INTERNET", "ROTEADOR", "SENHA", "SINAL", "CONEXÃO"], "categoria": "internet"}, {"palavra": "MEME", "proibidas": ["ENGRAÇADO", "COMPARTILHAR", "INTERNET", "RISADA", "REDES SOCIAIS"], "categoria": "internet"}, {"palavra": "TRÂNSITO", "proibidas": ["CARRO", "BUZINA", "ENGARRAFAMENTO", "SEMÁFORO", "RADAR"], "categoria": "cotidiano"}, {"palavra": "FILA", "proibidas": ["ESPERAR", "BANCO", "ORDEM", "DEMORADO", "GUICHÊ"], "categoria": "cotidiano"}, {"palavra": "RESSACA", "proibidas": ["FESTA", "DOR DE CABEÇA", "ÁLCOOL", "ENJOO", "REMÉDIO"], "categoria": "cotidiano"}, {"palavra": "ATRASO", "proibidas": ["RELÓGIO", "CORRER", "DESCULPA", "PRESSA", "DESPERTADOR"], "categoria": "cotidiano"}, {"palavra": "APAGÃO", "proibidas": ["ESCURO", "VELA", "LUZ", "ELETRICIDADE", "LANTERNA"], "categoria": "cotidiano"}, {"palavra": "BOLETO", "proibidas": ["PAGAMENTO", "VENCIMENTO", "BANCO", "CÓDIGO DE BARRAS", "JUROS"], "categoria": "cotidiano"}, {"palavra": "CHUVA", "proibidas": ["ENCHENTE", "MOLHADO", "NUVEM", "POÇA", "TROVÃO"], "categoria": "cotidiano"}, {"palavra": "PROVA", "proibidas": ["ESTUDAR", "NOTA", "CANETA", "NERVOSO", "COLA"], "categoria": "escola"}, {"palavra": "RECREIO", "proibidas": ["LANCHE", "BRINCAR", "PÁTIO", "SINO", "BOLA"], "categoria": "escola"}, {"palavra": "MOCHILA", "proibidas": ["LIVRO", "ALÇA", "ESCOLA", "CADERNO", "ESTOJO"], "categoria": "escola"}, {"palavra": "LOUSA", "proibidas": ["GIZ", "PROFESSOR", "APAGADOR", "SALA", "PINCEL"], "categoria": "escola"}, {"palavra": "BOLETIM", "proibidas": ["NOTA", "ESCOLA", "PAIS", "ASSINATURA", "DIRETORIA"], "categoria": "escola"}, {"palavra": "UNIFORME", "proibidas": ["CAMISETA", "ESCOLA", "LOGO", "ALUNO", "TÊNIS"], "categoria": "escola"}, {"palavra": "REUNIÃO", "proibidas": ["MESA", "CHEFE", "PAUTA", "POWERPOINT", "APRESENTAÇÃO"], "categoria": "trabalho"}, {"palavra": "SALÁRIO", "proibidas": ["PAGAMENTO", "MÊS", "HOLERITE", "TRABALHO", "BANCO"], "categoria": "trabalho"}, {"palavra": "CRACHÁ", "proibidas": ["IDENTIFICAÇÃO", "EMPRESA", "PESCOÇO", "FOTO", "CATRACA"], "categoria": "trabalho"}, {"palavra": "ENTREVISTA", "proibidas": ["EMPREGO", "CURRÍCULO", "NERVOSO", "VAGA", "CANDIDATO"], "categoria": "trabalho"}, {"palavra": "FÉRIAS", "proibidas": ["DESCANSO", "VIAGEM", "TRABALHO", "PRAIA", "MALA"], "categoria": "trabalho"}, {"palavra": "HOME OFFICE", "proibidas": ["COMPUTADOR", "PIJAMA", "CASA", "REUNIÃO", "FONE"], "categoria": "trabalho"}, {"palavra": "MALA", "proibidas": ["VIAGEM", "ROUPA", "AEROPORTO", "RODINHA", "ETIQUETA"], "categoria": "viagem"}, {"palavra": "PASSAPORTE", "proibidas": ["VIAGEM", "CARIMBO", "FOTO", "FRONTEIRA", "VISTO"], "categoria": "viagem"}, {"palavra": "HOTEL", "proibidas": ["QUARTO", "RECEPÇÃO", "HÓSPEDE", "CAMA", "PISCINA"], "categoria": "viagem"}, {"palavra": "MOCHILÃO", "proibidas": ["VIAGEM", "ALBERGUE", "AVENTURA", "EXPLORAR", "TRILHA"], "categoria": "viagem"}, {"palavra": "CRUZEIRO", "proibidas": ["NAVIO", "PASSAGEIRO", "MAR", "CABINE", "CONVÉS"], "categoria": "viagem"}, {"palavra": "FLORESTA", "proibidas": ["ÁRVORE", "VERDE", "ANIMAIS", "MATA", "TRILHA"], "categoria": "natureza"}, {"palavra": "MONTANHA", "proibidas": ["PICO", "ESCALADA", "ALTA", "NEVE", "TRILHA"], "categoria": "natureza"}, {"palavra": "RIO", "proibidas": ["ÁGUA", "PEIXE", "CORRENTEZA", "MARGEM", "BARCO"], "categoria": "natureza"}, {"palavra": "CACHOEIRA", "proibidas": ["QUEDA", "PEDRA", "BANHO", "NATUREZA", "TRILHA"], "categoria": "natureza"}, {"palavra": "DESERTO", "proibidas": ["AREIA", "CALOR", "CAMELO", "SECO", "DUNA"], "categoria": "natureza"}, {"palavra": "ARCO-ÍRIS", "proibidas": ["CORES", "CHUVA", "CÉU", "LENDA", "PRISMA"], "categoria": "natureza"}, {"palavra": "GELADEIRA", "proibidas": ["COZINHA", "GELADO", "COMIDA", "PORTA", "ÍMÃ"], "categoria": "casa"}, {"palavra": "SOFÁ", "proibidas": ["SALA", "ALMOFADA", "TV", "DEITAR", "CONTROLE"], "categoria": "casa"}, {"palavra": "CHUVEIRO", "proibidas": ["BANHO", "ÁGUA", "QUENTE", "TOALHA", "SABONETE"], "categoria": "casa"}, {"palavra": "VASSOURA", "proibidas": ["LIMPEZA", "PÓ", "CABO", "VARRER", "PÁ"], "categoria": "casa"}, {"palavra": "VARAL", "proibidas": ["ROUPA", "PREGADOR", "SECAR", "QUINTAL", "SOL"], "categoria": "casa"}, {"palavra": "TRAVESSEIRO", "proibidas": ["CAMA", "DORMIR", "FOFO", "CABEÇA", "LENÇOL"], "categoria": "casa"}, {"palavra": "CONTROLE REMOTO", "proibidas": ["TV", "PILHA", "CANAL", "SOFÁ", "BOTÃO"], "categoria": "casa"}, {"palavra": "BICICLETA", "proibidas": ["PEDAL", "RODA", "GUIDÃO", "CAPACETE", "CORRENTE"], "categoria": "veiculo"}, {"palavra": "MOTO", "proibidas": ["CAPACETE", "GUIDÃO", "VELOCIDADE", "MOTOQUEIRO", "ESCAPAMENTO"], "categoria": "veiculo"}, {"palavra": "ÔNIBUS", "proibidas": ["PASSAGEM", "PONTO", "MOTORISTA", "CATRACA", "RODOVIÁRIA"], "categoria": "veiculo"}, {"palavra": "TREM", "proibidas": ["TRILHO", "ESTAÇÃO", "VAGÃO", "VIAGEM", "APITO"], "categoria": "veiculo"}, {"palavra": "AVIÃO", "proibidas": ["VOAR", "ASA", "AEROPORTO", "PILOTO", "TURBINA"], "categoria": "veiculo"}, {"palavra": "CAMINHÃO", "proibidas": ["CARGA", "ESTRADA", "MOTORISTA", "CARRETA", "BAÚ"], "categoria": "veiculo"}, {"palavra": "PATINETE", "proibidas": ["RODINHA", "ELÉTRICO", "RUA", "EQUILÍBRIO", "FREIO"], "categoria": "veiculo"}, {"palavra": "ANIVERSÁRIO", "proibidas": ["BOLO", "VELA", "PARABÉNS", "FESTA", "CONVIDADO"], "categoria": "festa"}, {"palavra": "CASAMENTO", "proibidas": ["NOIVA", "ALIANÇA", "IGREJA", "FESTA", "BUQUÊ"], "categoria": "festa"}, {"palavra": "CARNAVAL", "proibidas": ["FANTASIA", "BLOCO", "SAMBA", "CONFETE", "FOLIA"], "categoria": "festa"}, {"palavra": "FESTA JUNINA", "proibidas": ["QUADRILHA", "FOGUEIRA", "MILHO", "BANDEIRINHA", "ARRAIÁ"], "categoria": "festa"}, {"palavra": "RÉVEILLON", "proibidas": ["FOGOS", "ANO NOVO", "BRINDE", "MEIA-NOITE", "CHAMPANHE"], "categoria": "festa"}, {"palavra": "CHÁ DE BEBÊ", "proibidas": ["GRÁVIDA", "PRESENTE", "ROSA", "FRALDA", "ENXOVAL"], "categoria": "festa"}, {"palavra": "VIOLÃO", "proibidas": ["CORDA", "MÚSICA", "TOCAR", "DEDO", "PALHETA"], "categoria": "musica"}, {"palavra": "SAMBA", "proibidas": ["PANDEIRO", "PASSISTA", "ESCOLA", "RITMO", "SURDO"], "categoria": "musica"}, {"palavra": "FUNK", "proibidas": ["BAILE", "PASSINHO", "GRAVE", "MC", "DJ"], "categoria": "musica"}, {"palavra": "SERTANEJO", "proibidas": ["VIOLA", "CHAPÉU", "MODÃO", "DUPLA", "BOTA"], "categoria": "musica"}, {"palavra": "FORRÓ", "proibidas": ["SANFONA", "FESTA JUNINA", "PÉ DE SERRA", "DANÇA", "XOTE"], "categoria": "musica"}, {"palavra": "MICROFONE", "proibidas": ["CANTAR", "SOM", "PALCO", "VOZ", "FEEDBACK"], "categoria": "musica"}, {"palavra": "KARAOKÊ", "proibidas": ["CANTAR", "MICROFONE", "MÚSICA", "TELA", "PLATEIA"], "categoria": "musica"}, {"palavra": "NOVELA", "proibidas": ["CAPÍTULO", "GLOBO", "DRAMA", "PERSONAGEM", "VILÃ"], "categoria": "tv"}, {"palavra": "JORNAL", "proibidas": ["NOTÍCIA", "APRESENTADOR", "REPÓRTER", "MANCHETE", "EDITORIAL"], "categoria": "tv"}, {"palavra": "DESENHO ANIMADO", "proibidas": ["TV", "CRIANÇA", "PERSONAGEM", "CANAL", "INFANTIL"], "categoria": "tv"}, {"palavra": "PROPAGANDA", "proibidas": ["COMERCIAL", "TV", "PRODUTO", "INTERVALO", "SLOGAN"], "categoria": "tv"}, {"palavra": "REALITY SHOW", "proibidas": ["CONFINAMENTO", "PARTICIPANTE", "CÂMERA", "ELIMINAÇÃO", "VOTAÇÃO"], "categoria": "tv"}, {"palavra": "CAIPIRA", "proibidas": ["CHAPÉU", "ROÇA", "INTERIOR", "VIOLA", "SANFONA"], "categoria": "cultura-brasileira"}, {"palavra": "JEITINHO BRASILEIRO", "proibidas": ["DESCULPA", "IMPROVISO", "FLEXÍVEL", "ESPERTO", "CRIATIVIDADE"], "categoria": "cultura-brasileira"}, {"palavra": "SELEÇÃO BRASILEIRA", "proibidas": ["CANARINHO", "COPA", "TORCIDA", "PENTACAMPEÃO", "ESTÁDIO"], "categoria": "cultura-brasileira"}, {"palavra": "TRIO ELÉTRICO", "proibidas": ["CARNAVAL", "SALVADOR", "SOM", "RUA", "MICROFONE"], "categoria": "cultura-brasileira"}, {"palavra": "PÃO DE AÇÚCAR", "proibidas": ["BONDINHO", "MORRO", "VISTA", "CARIOCA", "TELEFÉRICO"], "categoria": "cultura-brasileira"}, {"palavra": "CRISTO REDENTOR", "proibidas": ["RIO DE JANEIRO", "ESTÁTUA", "CORCOVADO", "BRAÇOS ABERTOS", "MIRANTE"], "categoria": "cultura-brasileira"}, {"palavra": "PANDEIRO", "proibidas": ["SAMBA", "BATER", "MÃO", "INSTRUMENTO", "FESTA"], "categoria": "cultura-brasileira"}, {"palavra": "FEIRA LIVRE", "proibidas": ["BARRACA", "FRUTA", "PECHINCHAR", "DOMINGO", "BANCA"], "categoria": "cultura-brasileira"}, {"palavra": "PIADA", "proibidas": ["RISADA", "HUMOR", "CONTAR", "GRAÇA", "PLATEIA"], "categoria": "engracada"}, {"palavra": "SONECA", "proibidas": ["DORMIR", "SOFÁ", "TARDE", "COCHILO", "REDE"], "categoria": "engracada"}, {"palavra": "BARRIGA", "proibidas": ["GORDA", "FOME", "DOR", "UMBIGO", "CÓCEGAS"], "categoria": "engracada"}, {"palavra": "SOLUÇO", "proibidas": ["AR", "SUSTO", "ÁGUA", "ENGASGAR", "RESPIRAR"], "categoria": "engracada"}, {"palavra": "ARROTO", "proibidas": ["GÁS", "EDUCADO", "BARULHO", "REFRIGERANTE", "CONSTRANGIMENTO"], "categoria": "engracada"}, {"palavra": "COCEIRA", "proibidas": ["COÇAR", "MOSQUITO", "PELE", "IRRITAÇÃO", "ALERGIA"], "categoria": "engracada"}, {"palavra": "RONCO", "proibidas": ["DORMIR", "BARULHO", "NARIZ", "INCOMODAR", "TRAVESSEIRO"], "categoria": "engracada"}, {"palavra": "CORRER", "proibidas": ["PERNA", "RÁPIDO", "MARATONA", "SUOR", "TÊNIS"], "categoria": "acao"}, {"palavra": "PULAR", "proibidas": ["CORDA", "ALTO", "CANGURU", "SALTAR", "TRAMPOLIM"], "categoria": "acao"}, {"palavra": "DANÇAR", "proibidas": ["MÚSICA", "PISTA", "RITMO", "BAILE", "PASSO"], "categoria": "acao"}, {"palavra": "NADAR", "proibidas": ["PISCINA", "ÁGUA", "BRAÇADA", "MAR", "TOUCA"], "categoria": "acao"}, {"palavra": "GRITAR", "proibidas": ["ALTO", "VOZ", "SUSTO", "BERRAR", "ECO"], "categoria": "acao"}, {"palavra": "CHORAR", "proibidas": ["LÁGRIMA", "TRISTEZA", "SOLUÇAR", "LENÇO", "EMOÇÃO"], "categoria": "acao"}, {"palavra": "RIR", "proibidas": ["GARGALHADA", "PIADA", "ALEGRIA", "SORRISO", "COMÉDIA"], "categoria": "acao"}, {"palavra": "SAUDADE", "proibidas": ["LONGE", "LEMBRANÇA", "FALTA", "CORAÇÃO", "DISTÂNCIA"], "categoria": "sentimento"}, {"palavra": "CIÚME", "proibidas": ["NAMORADO", "DESCONFIANÇA", "POSSESSIVO", "TRAIÇÃO", "SEGREDO"], "categoria": "sentimento"}, {"palavra": "VERGONHA", "proibidas": ["CORAR", "TÍMIDO", "ENCOLHER", "EMBARAÇO", "PLATEIA"], "categoria": "sentimento"}, {"palavra": "RAIVA", "proibidas": ["BRAVO", "IRRITADO", "GRITAR", "NERVOSO", "XINGAR"], "categoria": "sentimento"}, {"palavra": "FELICIDADE", "proibidas": ["SORRISO", "ALEGRIA", "COMEMORAR", "LEVE", "ABRAÇO"], "categoria": "sentimento"}, {"palavra": "MEDO", "proibidas": ["SUSTO", "TREMER", "ESCURO", "PAVOR", "FILME DE TERROR"], "categoria": "sentimento"}, {"palavra": "ESCOVAR O DENTE", "proibidas": ["PASTA", "BANHEIRO", "BOCA", "HIGIENE", "ESPELHO"], "categoria": "habito"}, {"palavra": "SELFIE", "proibidas": ["CELULAR", "SORRISO", "CÂMERA", "POSE", "FILTRO"], "categoria": "habito"}, {"palavra": "MARATONAR SÉRIE", "proibidas": ["SOFÁ", "EPISÓDIO", "PIPOCA", "TV", "PIJAMA"], "categoria": "habito"}, {"palavra": "FOFOCA", "proibidas": ["SEGREDO", "CONVERSA", "VIZINHA", "BOATO", "WHATSAPP"], "categoria": "habito"}, {"palavra": "ACADEMIA", "proibidas": ["MUSCULAÇÃO", "PESO", "SUOR", "TREINO", "ESPELHO"], "categoria": "habito"}, {"palavra": "LAVAR A LOUÇA", "proibidas": ["PIA", "ESPONJA", "SABÃO", "PRATO", "LUVA"], "categoria": "habito"}, {"palavra": "SAPATO", "proibidas": ["PÉ", "LOJA", "PAR", "CADARÇO", "MEIA"], "categoria": "compra"}, {"palavra": "ROUPA", "proibidas": ["LOJA", "PROVADOR", "TAMANHO", "ARMÁRIO", "ETIQUETA"], "categoria": "compra"}, {"palavra": "PRESENTE", "proibidas": ["EMBRULHO", "ANIVERSÁRIO", "SURPRESA", "LAÇO", "CARTÃO"], "categoria": "compra"}, {"palavra": "INGRESSO", "proibidas": ["SHOW", "FILA", "ENTRADA", "EVENTO", "CATRACA"], "categoria": "compra"}, {"palavra": "REMÉDIO", "proibidas": ["FARMÁCIA", "RECEITA", "COMPRIMIDO", "DOR", "BULA"], "categoria": "compra"}, {"palavra": "PASSAGEM", "proibidas": ["VIAGEM", "AEROPORTO", "DESTINO", "BILHETE", "MALA"], "categoria": "compra"}, {"palavra": "GUARDA-CHUVA", "proibidas": ["MOLHADO", "ABRIR", "PROTEÇÃO", "TEMPESTADE", "VENTO"], "categoria": "objeto"}, {"palavra": "ÓCULOS", "proibidas": ["LENTE", "VISÃO", "ARMAÇÃO", "OLHOS", "GRAU"], "categoria": "objeto"}, {"palavra": "RELÓGIO", "proibidas": ["HORA", "PULSO", "PONTEIRO", "TEMPO", "DESPERTAR"], "categoria": "objeto"}, {"palavra": "CHAVE", "proibidas": ["PORTA", "FECHADURA", "CHAVEIRO", "ABRIR", "CADEADO"], "categoria": "objeto"}, {"palavra": "ESPELHO", "proibidas": ["REFLEXO", "IMAGEM", "VAIDADE", "QUEBRAR", "MOLDURA"], "categoria": "objeto"}, {"palavra": "MOQUECA", "proibidas": ["PEIXE", "DENDÊ", "LEITE DE COCO", "BAHIA", "PANELA DE BARRO"], "categoria": "comida"}, {"palavra": "VATAPÁ", "proibidas": ["DENDÊ", "CAMARÃO", "BAHIA", "PASTA", "TEMPERO"], "categoria": "comida"}, {"palavra": "PICANHA", "proibidas": ["CARNE", "CHURRASCO", "GORDURA", "GRELHA", "PONTA"], "categoria": "comida"}, {"palavra": "FAROFA", "proibidas": ["FARINHA", "CHURRASCO", "TEMPERO", "ACOMPANHAMENTO", "TORRADA"], "categoria": "comida"}, {"palavra": "PAMONHA", "proibidas": ["MILHO", "FOLHA", "FESTA JUNINA", "DOCE", "PANELA"], "categoria": "comida"}, {"palavra": "CANJICA", "proibidas": ["MILHO", "LEITE", "CANELA", "FESTA JUNINA", "DOCE"], "categoria": "comida"}, {"palavra": "PICOLÉ", "proibidas": ["GELADO", "PALITO", "VERÃO", "SORVETERIA", "GELO"], "categoria": "comida"}, {"palavra": "SORVETE", "proibidas": ["GELADO", "CASQUINHA", "VERÃO", "COLHER", "SABOR"], "categoria": "comida"}, {"palavra": "PIPOCA", "proibidas": ["CINEMA", "MILHO", "MANTEIGA", "ESTOURAR", "SACO"], "categoria": "comida"}, {"palavra": "CHOCOLATE", "proibidas": ["DOCE", "CACAU", "BARRA", "PÁSCOA", "DERRETER"], "categoria": "comida"}, {"palavra": "PÃO FRANCÊS", "proibidas": ["PADARIA", "MANTEIGA", "CROCANTE", "CAFÉ DA MANHÃ", "MASSA"], "categoria": "comida"}, {"palavra": "BOLO DE CHOCOLATE", "proibidas": ["VELA", "ANIVERSÁRIO", "COBERTURA", "FATIA", "CONFEITEIRO"], "categoria": "comida"}, {"palavra": "ESPETINHO", "proibidas": ["CARVÃO", "CARNE", "PALITO", "RUA", "CHURRASQUINHO"], "categoria": "comida"}, {"palavra": "ÁGUA DE COCO", "proibidas": ["PALMEIRA", "PRAIA", "CANUDO", "GELADA", "VERÃO"], "categoria": "bebida"}, {"palavra": "LEITE", "proibidas": ["VACA", "COPO", "CAIXINHA", "CAFÉ", "CÁLCIO"], "categoria": "bebida"}, {"palavra": "VITAMINA", "proibidas": ["LIQUIDIFICADOR", "FRUTA", "LEITE", "COPO", "ENERGIA"], "categoria": "bebida"}, {"palavra": "CHÁ", "proibidas": ["XÍCARA", "ÁGUA QUENTE", "ERVA", "SAQUINHO", "CALMANTE"], "categoria": "bebida"}, {"palavra": "ENERGÉTICO", "proibidas": ["LATA", "CAFEÍNA", "FESTA", "ACORDAR", "MISTURA"], "categoria": "bebida"}, {"palavra": "LEÃO", "proibidas": ["JUBA", "SAVANA", "REI", "RUGIDO", "ÁFRICA"], "categoria": "animal"}, {"palavra": "MACACO", "proibidas": ["BANANA", "ÁRVORE", "PULAR", "SELVA", "PRIMATA"], "categoria": "animal"}, {"palavra": "COBRA", "proibidas": ["VENENO", "RASTEJAR", "PICADA", "LÍNGUA", "RÉPTIL"], "categoria": "animal"}, {"palavra": "BEIJA-FLOR", "proibidas": ["JARDIM", "VOAR", "PEQUENO", "NÉCTAR", "ASA"], "categoria": "animal"}, {"palavra": "CAVALO", "proibidas": ["GALOPE", "FAZENDA", "CRINA", "FERRADURA", "MONTARIA"], "categoria": "animal"}, {"palavra": "VACA", "proibidas": ["LEITE", "FAZENDA", "MUGIR", "PASTO", "CHIFRE"], "categoria": "animal"}, {"palavra": "PORCO", "proibidas": ["CHIQUEIRO", "LAMA", "BACON", "GORDO", "ROSA"], "categoria": "animal"}, {"palavra": "GALINHA", "proibidas": ["OVO", "GALO", "BICO", "PENAS", "PINTINHO"], "categoria": "animal"}, {"palavra": "ARARA", "proibidas": ["PENAS", "COLORIDA", "AMAZÔNIA", "BICO", "VOAR"], "categoria": "animal"}, {"palavra": "PEIXE-BOI", "proibidas": ["MAR", "LENTO", "AMAZÔNIA", "MAMÍFERO", "NADAR"], "categoria": "animal"}, {"palavra": "TUBARÃO", "proibidas": ["MAR", "DENTES", "NADADEIRA", "PERIGO", "ÁGUA"], "categoria": "animal"}, {"palavra": "PINGUIM", "proibidas": ["GELO", "ANTÁRTIDA", "FRIO", "BICO", "PRETO E BRANCO"], "categoria": "animal"}, {"palavra": "ENGENHEIRO", "proibidas": ["CONSTRUÇÃO", "CÁLCULO", "PROJETO", "OBRA", "CAPACETE"], "categoria": "profissao"}, {"palavra": "VETERINÁRIO", "proibidas": ["ANIMAL", "CLÍNICA", "VACINA", "PET", "EXAME"], "categoria": "profissao"}, {"palavra": "JORNALISTA", "proibidas": ["NOTÍCIA", "REPORTAGEM", "ENTREVISTA", "CANETA", "JORNAL"], "categoria": "profissao"}, {"palavra": "PILOTO", "proibidas": ["AVIÃO", "CABINE", "VOO", "UNIFORME", "AEROPORTO"], "categoria": "profissao"}, {"palavra": "GARÇOM", "proibidas": ["RESTAURANTE", "BANDEJA", "MESA", "CARDÁPIO", "GORJETA"], "categoria": "profissao"}, {"palavra": "PEDREIRO", "proibidas": ["TIJOLO", "OBRA", "CIMENTO", "CAPACETE", "CONSTRUÇÃO"], "categoria": "profissao"}, {"palavra": "ELETRICISTA", "proibidas": ["FIO", "TOMADA", "CHOQUE", "LUZ", "INSTALAÇÃO"], "categoria": "profissao"}, {"palavra": "ATOR", "proibidas": ["PALCO", "PERSONAGEM", "FILME", "TEATRO", "ROTEIRO"], "categoria": "profissao"}, {"palavra": "ARQUITETO", "proibidas": ["PLANTA", "PROJETO", "CONSTRUÇÃO", "PRÉDIO", "DESENHO"], "categoria": "profissao"}, {"palavra": "CINEMA", "proibidas": ["PIPOCA", "FILME", "TELA", "POLTRONA", "INGRESSO"], "categoria": "lugar"}, {"palavra": "BIBLIOTECA", "proibidas": ["LIVRO", "SILÊNCIO", "ESTANTE", "LEITURA", "EMPRÉSTIMO"], "categoria": "lugar"}, {"palavra": "SHOPPING", "proibidas": ["LOJA", "PRAÇA DE ALIMENTAÇÃO", "VITRINE", "ESCADA ROLANTE", "COMPRAS"], "categoria": "lugar"}, {"palavra": "PARQUE", "proibidas": ["ÁRVORE", "BANCO", "CRIANÇA", "PASSEAR", "GRAMA"], "categoria": "lugar"}, {"palavra": "POSTO DE GASOLINA", "proibidas": ["COMBUSTÍVEL", "BOMBA", "CARRO", "ABASTECER", "FILA"], "categoria": "lugar"}, {"palavra": "ESTÁDIO", "proibidas": ["FUTEBOL", "TORCIDA", "GRAMADO", "ARQUIBANCADA", "JOGO"], "categoria": "lugar"}, {"palavra": "ZOOLÓGICO", "proibidas": ["ANIMAL", "JAULA", "VISITA", "CRIANÇA", "BICHO"], "categoria": "lugar"}, {"palavra": "DELEGACIA", "proibidas": ["POLÍCIA", "BOLETIM DE OCORRÊNCIA", "INVESTIGAÇÃO", "DENÚNCIA", "REGISTRO"], "categoria": "lugar"}, {"palavra": "BRASÍLIA", "proibidas": ["CAPITAL", "CONGRESSO", "PLANALTO", "CÚPULA", "GOVERNO"], "categoria": "cidade"}, {"palavra": "FLORIANÓPOLIS", "proibidas": ["ILHA", "SANTA CATARINA", "PRAIA", "PONTE", "SURFE"], "categoria": "cidade"}, {"palavra": "FORTALEZA", "proibidas": ["CEARÁ", "PRAIA", "SOL", "NORDESTE", "BEACH PARK"], "categoria": "cidade"}, {"palavra": "CURITIBA", "proibidas": ["PARANÁ", "FRIO", "ÔNIBUS", "VERDE", "PINHÃO"], "categoria": "cidade"}, {"palavra": "BELÉM", "proibidas": ["PARÁ", "AMAZÔNIA", "MERCADO VER-O-PESO", "RIO", "NORTE"], "categoria": "cidade"}, {"palavra": "ALEMANHA", "proibidas": ["CERVEJA", "OKTOBERFEST", "CARRO", "BERLIM", "EUROPA"], "categoria": "pais"}, {"palavra": "ESPANHA", "proibidas": ["TOURADA", "FLAMENCO", "MADRI", "PAELLA", "EUROPA"], "categoria": "pais"}, {"palavra": "MÉXICO", "proibidas": ["TACO", "SOMBRERO", "TEQUILA", "MAIA", "PIMENTA"], "categoria": "pais"}, {"palavra": "CHINA", "proibidas": ["MURALHA", "ARROZ", "DRAGÃO", "PANDA", "ORIENTE"], "categoria": "pais"}, {"palavra": "INGLATERRA", "proibidas": ["LONDRES", "CHÁ", "FUTEBOL", "RAINHA", "BIG BEN"], "categoria": "pais"}, {"palavra": "CANADÁ", "proibidas": ["NEVE", "FOLHA DE BORDO", "FRIO", "HOCKEY", "URSO"], "categoria": "pais"}, {"palavra": "TÊNIS", "proibidas": ["RAQUETE", "QUADRA", "SAQUE", "BOLINHA", "REDE"], "categoria": "esporte"}, {"palavra": "BASQUETE", "proibidas": ["CESTA", "QUADRA", "BOLA LARANJA", "DRIBLE", "TIME"], "categoria": "esporte"}, {"palavra": "GINÁSTICA", "proibidas": ["FLEXIBILIDADE", "TAPETE", "OLIMPÍADA", "EQUILÍBRIO", "ACROBACIA"], "categoria": "esporte"}, {"palavra": "ATLETISMO", "proibidas": ["PISTA", "CORRIDA", "MEDALHA", "LARGADA", "OLIMPÍADA"], "categoria": "esporte"}, {"palavra": "JUDÔ", "proibidas": ["QUIMONO", "FAIXA", "TATAME", "LUTA", "GOLPE"], "categoria": "esporte"}, {"palavra": "FÓRMULA 1", "proibidas": ["CARRO", "PISTA", "VELOCIDADE", "PILOTO", "PÓDIO"], "categoria": "esporte"}, {"palavra": "CICLISMO", "proibidas": ["BICICLETA", "PEDAL", "CAPACETE", "PISTA", "VELOCIDADE"], "categoria": "esporte"}, {"palavra": "FRIENDS", "proibidas": ["SOFÁ", "CAFÉ", "AMIGOS", "NOVA YORK", "SÉRIE"], "categoria": "filme"}, {"palavra": "STRANGER THINGS", "proibidas": ["MONSTRO", "ANOS 80", "MUNDO INVERTIDO", "MISTÉRIO", "SÉRIE"], "categoria": "filme"}, {"palavra": "JURASSIC PARK", "proibidas": ["DINOSSAURO", "ILHA", "PARQUE", "FÓSSIL", "CIENTISTA"], "categoria": "filme"}, {"palavra": "FROZEN", "proibidas": ["GELO", "RAINHA", "NEVE", "IRMÃS", "CASTELO"], "categoria": "filme"}, {"palavra": "MOANA", "proibidas": ["OCEANO", "ILHA", "POLINÉSIA", "BARCO", "AVENTURA"], "categoria": "filme"}, {"palavra": "SHREK", "proibidas": ["OGRO", "PÂNTANO", "BURRO", "PRINCESA", "VERDE"], "categoria": "filme"}, {"palavra": "SUPERMAN", "proibidas": ["CAPA", "VOAR", "KRIPTONITA", "ÓCULOS", "HERÓI"], "categoria": "personagem"}, {"palavra": "MULHER-MARAVILHA", "proibidas": ["LAÇO", "AMAZONA", "ESCUDO", "GUERREIRA", "HERÓINA"], "categoria": "personagem"}, {"palavra": "CEBOLINHA", "proibidas": ["PIPA", "TURMA", "MÔNICA", "AMIGO", "DESENHO"], "categoria": "personagem"}, {"palavra": "PINGUIM DE MADAGASCAR", "proibidas": ["GELO", "MISSÃO", "ANTÁRTIDA", "AGENTE", "DESENHO"], "categoria": "personagem"}, {"palavra": "PATOLINO", "proibidas": ["PENAS", "DESENHO", "VOZ", "PERNALONGA", "DISNEY"], "categoria": "personagem"}, {"palavra": "GISELE BÜNDCHEN", "proibidas": ["PASSARELA", "MODELO", "LOIRA", "DESFILE", "INTERNACIONAL"], "categoria": "celebridade"}, {"palavra": "AYRTON SENNA", "proibidas": ["FÓRMULA 1", "CAPACETE", "PILOTO", "VELOCIDADE", "ÍDOLO"], "categoria": "celebridade"}, {"palavra": "ROBERTO CARLOS", "proibidas": ["REI", "MÚSICA", "ROMÂNTICO", "SHOW", "CANTOR"], "categoria": "celebridade"}, {"palavra": "IVETE SANGALO", "proibidas": ["AXÉ", "BAHIA", "CANTORA", "CARNAVAL", "TRIO ELÉTRICO"], "categoria": "celebridade"}, {"palavra": "TABLET", "proibidas": ["TELA", "TOQUE", "APLICATIVO", "PORTÁTIL", "BATERIA"], "categoria": "tecnologia"}, {"palavra": "SMARTWATCH", "proibidas": ["PULSO", "TELA", "NOTIFICAÇÃO", "BATERIA", "APLICATIVO"], "categoria": "tecnologia"}, {"palavra": "DRONE", "proibidas": ["VOAR", "CÂMERA", "CONTROLE", "HÉLICE", "ALTURA"], "categoria": "tecnologia"}, {"palavra": "TECLADO", "proibidas": ["TECLA", "DIGITAR", "COMPUTADOR", "LETRA", "ESPAÇO"], "categoria": "tecnologia"}, {"palavra": "MOUSE", "proibidas": ["CLICAR", "COMPUTADOR", "CURSOR", "RATO", "FIO"], "categoria": "tecnologia"}, {"palavra": "LIQUIDIFICADOR", "proibidas": ["LÂMINA", "VITAMINA", "COPO", "MOTOR", "COZINHA"], "categoria": "tecnologia"}, {"palavra": "FERRO DE PASSAR", "proibidas": ["ROUPA", "VAPOR", "TÁBUA", "QUENTE", "TOMADA"], "categoria": "tecnologia"}, {"palavra": "ASPIRADOR DE PÓ", "proibidas": ["LIMPEZA", "FIO", "SUCÇÃO", "CASA", "SUJEIRA"], "categoria": "tecnologia"}, {"palavra": "MÁQUINA DE LAVAR", "proibidas": ["ROUPA", "SABÃO", "ÁGUA", "CENTRIFUGAR", "TAMBOR"], "categoria": "tecnologia"}, {"palavra": "TIKTOK", "proibidas": ["VÍDEO", "DANÇA", "TENDÊNCIA", "CELULAR", "ALGORITMO"], "categoria": "internet"}, {"palavra": "NETFLIX", "proibidas": ["SÉRIE", "FILME", "ASSINATURA", "STREAMING", "MARATONA"], "categoria": "internet"}, {"palavra": "SPOTIFY", "proibidas": ["MÚSICA", "PLAYLIST", "OUVIR", "ASSINATURA", "ÁUDIO"], "categoria": "internet"}, {"palavra": "E-MAIL", "proibidas": ["CAIXA DE ENTRADA", "MENSAGEM", "ANEXO", "SPAM", "ARROBA"], "categoria": "internet"}, {"palavra": "GOOGLE", "proibidas": ["PESQUISA", "BUSCAR", "SITE", "NAVEGADOR", "RESULTADO"], "categoria": "internet"}, {"palavra": "DESPERTADOR", "proibidas": ["ACORDAR", "ALARME", "SONO", "MANHÃ", "SONECA"], "categoria": "cotidiano"}, {"palavra": "CONTA DE ÁGUA", "proibidas": ["PAGAMENTO", "TORNEIRA", "MENSAL", "VENCIMENTO", "CASA"], "categoria": "cotidiano"}, {"palavra": "TROCO", "proibidas": ["DINHEIRO", "MOEDA", "CAIXA", "PAGAMENTO", "SOBRAR"], "categoria": "cotidiano"}, {"palavra": "QUEDA DE INTERNET", "proibidas": ["WI-FI", "SEM SINAL", "TRAVAR", "IRRITAÇÃO", "REINICIAR"], "categoria": "cotidiano"}, {"palavra": "ATENDIMENTO AO CLIENTE", "proibidas": ["ESPERA", "TELEFONE", "PROTOCOLO", "RECLAMAÇÃO", "ROBÔ"], "categoria": "cotidiano"}, {"palavra": "FORMATURA", "proibidas": ["BIRRETE", "DIPLOMA", "FESTA", "TURMA", "PALCO"], "categoria": "escola"}, {"palavra": "CANTINA", "proibidas": ["LANCHE", "FILA", "ESCOLA", "GULOSEIMA", "INTERVALO"], "categoria": "escola"}, {"palavra": "VESTIBULAR", "proibidas": ["PROVA", "FACULDADE", "NOTA", "REDAÇÃO", "NERVOSISMO"], "categoria": "escola"}, {"palavra": "LIÇÃO DE CASA", "proibidas": ["CADERNO", "DEVER", "ESTUDAR", "PROFESSOR", "PRAZO"], "categoria": "escola"}, {"palavra": "EXCURSÃO", "proibidas": ["ÔNIBUS", "PASSEIO", "ESCOLA", "TURMA", "VIAGEM"], "categoria": "escola"}, {"palavra": "PLANILHA", "proibidas": ["EXCEL", "LINHA", "COLUNA", "FÓRMULA", "DADOS"], "categoria": "trabalho"}, {"palavra": "CHEFE", "proibidas": ["MANDAR", "ESCRITÓRIO", "ORDEM", "REUNIÃO", "SALÁRIO"], "categoria": "trabalho"}, {"palavra": "PROMOÇÃO", "proibidas": ["CARGO", "AUMENTO", "ESFORÇO", "SUBIR", "PARABÉNS"], "categoria": "trabalho"}, {"palavra": "CARTEIRA ASSINADA", "proibidas": ["EMPREGO", "DIREITOS", "REGISTRO", "CLT", "TRABALHO"], "categoria": "trabalho"}, {"palavra": "ESCRITÓRIO", "proibidas": ["MESA", "COMPUTADOR", "CADEIRA", "COLEGA", "EXPEDIENTE"], "categoria": "trabalho"}, {"palavra": "HORA EXTRA", "proibidas": ["TRABALHO", "CANSAÇO", "DINHEIRO", "NOITE", "ESFORÇO"], "categoria": "trabalho"}, {"palavra": "CHECK-IN", "proibidas": ["HOTEL", "RECEPÇÃO", "RESERVA", "AEROPORTO", "ENTRADA"], "categoria": "viagem"}, {"palavra": "GUIA TURÍSTICO", "proibidas": ["MAPA", "PASSEIO", "GRUPO", "EXPLICAÇÃO", "ROTEIRO"], "categoria": "viagem"}, {"palavra": "LEMBRANCINHA", "proibidas": ["VIAGEM", "PRESENTE", "MINIATURA", "LOJA", "RECORDAÇÃO"], "categoria": "viagem"}, {"palavra": "VISTO", "proibidas": ["PASSAPORTE", "EMBAIXADA", "VIAGEM", "CARIMBO", "DOCUMENTO"], "categoria": "viagem"}, {"palavra": "ESTRADA", "proibidas": ["VIAGEM", "CARRO", "PEDÁGIO", "PLACA", "ASFALTO"], "categoria": "viagem"}, {"palavra": "VULCÃO", "proibidas": ["LAVA", "ERUPÇÃO", "MONTANHA", "FUMAÇA", "FOGO"], "categoria": "natureza"}, {"palavra": "ILHA", "proibidas": ["MAR", "AREIA", "ISOLADA", "BARCO", "COQUEIRO"], "categoria": "natureza"}, {"palavra": "NEVE", "proibidas": ["FRIO", "BRANCO", "INVERNO", "BONECO", "GELO"], "categoria": "natureza"}, {"palavra": "TROVÃO", "proibidas": ["RAIO", "CHUVA", "BARULHO", "TEMPESTADE", "SUSTO"], "categoria": "natureza"}, {"palavra": "LUA", "proibidas": ["NOITE", "CÉU", "ASTRONAUTA", "CRATERA", "FASE"], "categoria": "natureza"}, {"palavra": "SOL", "proibidas": ["CALOR", "VERÃO", "PRAIA", "LUZ", "PROTETOR"], "categoria": "natureza"}, {"palavra": "FOGÃO", "proibidas": ["PANELA", "CHAMA", "COZINHA", "BOTIJÃO", "RECEITA"], "categoria": "casa"}, {"palavra": "MICRO-ONDAS", "proibidas": ["AQUECER", "PRATO", "PIPOCA", "BOTÃO", "COZINHA"], "categoria": "casa"}, {"palavra": "VENTILADOR", "proibidas": ["AR", "PÁ", "CALOR", "TOMADA", "VERÃO"], "categoria": "casa"}, {"palavra": "TAPETE", "proibidas": ["SALA", "PISO", "LIMPEZA", "MACIO", "DECORAÇÃO"], "categoria": "casa"}, {"palavra": "ESCADA", "proibidas": ["DEGRAU", "SUBIR", "PRÉDIO", "CORRIMÃO", "ALTURA"], "categoria": "casa"}, {"palavra": "QUINTAL", "proibidas": ["GRAMA", "VARAL", "ÁRVORE", "CERCA", "BRINCADEIRA"], "categoria": "casa"}, {"palavra": "CARRO", "proibidas": ["VOLANTE", "RODA", "GASOLINA", "MOTORISTA", "ESTRADA"], "categoria": "veiculo"}, {"palavra": "METRÔ", "proibidas": ["TRILHO", "ESTAÇÃO", "BILHETE", "TÚNEL", "CATRACA"], "categoria": "veiculo"}, {"palavra": "BARCO", "proibidas": ["REMO", "ÁGUA", "VELA", "PORTO", "MAR"], "categoria": "veiculo"}, {"palavra": "HELICÓPTERO", "proibidas": ["HÉLICE", "VOAR", "RESGATE", "PILOTO", "ALTURA"], "categoria": "veiculo"}, {"palavra": "TRATOR", "proibidas": ["FAZENDA", "ARADO", "PNEU GRANDE", "LAVOURA", "CAMPO"], "categoria": "veiculo"}, {"palavra": "DIA DAS CRIANÇAS", "proibidas": ["BRINQUEDO", "PRESENTE", "FESTA", "CRIANÇA", "OUTUBRO"], "categoria": "festa"}, {"palavra": "DIA DOS NAMORADOS", "proibidas": ["PRESENTE", "CASAL", "FLOR", "JANTAR", "ROMANCE"], "categoria": "festa"}, {"palavra": "NATAL", "proibidas": ["PAPAI NOEL", "ÁRVORE", "PRESENTE", "CEIA", "DEZEMBRO"], "categoria": "festa"}, {"palavra": "PÁSCOA", "proibidas": ["COELHO", "OVO", "CHOCOLATE", "CESTA", "ABRIL"], "categoria": "festa"}, {"palavra": "DIA DAS MÃES", "proibidas": ["PRESENTE", "FLOR", "CARTÃO", "HOMENAGEM", "MAIO"], "categoria": "festa"}, {"palavra": "CONFRATERNIZAÇÃO", "proibidas": ["EMPRESA", "FESTA", "COLEGAS", "BRINDE", "FIM DE ANO"], "categoria": "festa"}, {"palavra": "BATERIA", "proibidas": ["BAQUETA", "RITMO", "TAMBOR", "BANDA", "PRATO"], "categoria": "musica"}, {"palavra": "FLAUTA", "proibidas": ["SOPRAR", "SOM", "INSTRUMENTO", "ORQUESTRA", "NOTA"], "categoria": "musica"}, {"palavra": "SHOW", "proibidas": ["PALCO", "PLATEIA", "INGRESSO", "BANDA", "LUZES"], "categoria": "musica"}, {"palavra": "RÁDIO", "proibidas": ["ANTENA", "DIAL", "MÚSICA", "LOCUTOR", "ONDAS"], "categoria": "musica"}, {"palavra": "MPB", "proibidas": ["VIOLÃO", "POESIA", "CANTOR", "BRASIL", "ACÚSTICO"], "categoria": "musica"}, {"palavra": "ORQUESTRA", "proibidas": ["REGENTE", "INSTRUMENTOS", "CONCERTO", "MÚSICA CLÁSSICA", "PALCO"], "categoria": "musica"}, {"palavra": "SÉRIE", "proibidas": ["TEMPORADA", "EPISÓDIO", "STREAMING", "ELENCO", "ROTEIRO"], "categoria": "tv"}, {"palavra": "APRESENTADOR", "proibidas": ["MICROFONE", "PROGRAMA", "CÂMERA", "PLATEIA", "TV"], "categoria": "tv"}, {"palavra": "ANTENA", "proibidas": ["TV", "SINAL", "TELHADO", "PARABÓLICA", "RECEPÇÃO"], "categoria": "tv"}, {"palavra": "MARACATU", "proibidas": ["PERNAMBUCO", "TAMBOR", "CORTEJO", "CARNAVAL", "RITMO"], "categoria": "cultura-brasileira"}, {"palavra": "BUMBA MEU BOI", "proibidas": ["MARANHÃO", "FESTA", "TAMBOR", "DANÇA", "JUNINO"], "categoria": "cultura-brasileira"}, {"palavra": "CACHAÇA", "proibidas": ["ALAMBIQUE", "PINGA", "DESTILADA", "CANA", "BEBIDA"], "categoria": "cultura-brasileira"}, {"palavra": "GINGA", "proibidas": ["CAPOEIRA", "BALANÇO", "MOVIMENTO", "JOGO", "RITMO"], "categoria": "cultura-brasileira"}, {"palavra": "ESCOLA DE SAMBA", "proibidas": ["DESFILE", "SAMBÓDROMO", "ENREDO", "CARNAVAL", "BATERIA"], "categoria": "cultura-brasileira"}, {"palavra": "PUM", "proibidas": ["GÁS", "CHEIRO", "VERGONHA", "BARULHO", "CONSTRANGIMENTO"], "categoria": "engracada"}, {"palavra": "ESPIRRO", "proibidas": ["NARIZ", "ALERGIA", "BARULHO", "LENÇO", "GRIPE"], "categoria": "engracada"}, {"palavra": "BOCEJO", "proibidas": ["SONO", "CANSAÇO", "BOCA", "TÉDIO", "CONTAGIOSO"], "categoria": "engracada"}, {"palavra": "CÓCEGAS", "proibidas": ["RISADA", "PÉ", "BARRIGA", "CRIANÇA", "SENSÍVEL"], "categoria": "engracada"}, {"palavra": "TROPEÇÃO", "proibidas": ["QUEDA", "DESAJEITADO", "CHÃO", "EQUILÍBRIO", "SUSTO"], "categoria": "engracada"}, {"palavra": "COZINHAR", "proibidas": ["PANELA", "RECEITA", "FOGÃO", "TEMPERO", "PRATO"], "categoria": "acao"}, {"palavra": "ESTUDAR", "proibidas": ["LIVRO", "CADERNO", "PROVA", "CONCENTRAÇÃO", "ESCOLA"], "categoria": "acao"}, {"palavra": "VIAJAR", "proibidas": ["MALA", "PASSAGEM", "DESTINO", "AVENTURA", "FÉRIAS"], "categoria": "acao"}, {"palavra": "DESENHAR", "proibidas": ["LÁPIS", "PAPEL", "ARTE", "TRAÇO", "COR"], "categoria": "acao"}, {"palavra": "CANTAR", "proibidas": ["VOZ", "MÚSICA", "MICROFONE", "MELODIA", "PALCO"], "categoria": "acao"}, {"palavra": "NAMORAR", "proibidas": ["CASAL", "BEIJO", "ENCONTRO", "PAQUERA", "ROMANCE"], "categoria": "acao"}, {"palavra": "ESTACIONAR", "proibidas": ["CARRO", "VAGA", "MANOBRA", "GARAGEM", "RÉ"], "categoria": "acao"}, {"palavra": "ANSIEDADE", "proibidas": ["NERVOSISMO", "PREOCUPAÇÃO", "CORAÇÃO ACELERADO", "ANTECIPAÇÃO", "INQUIETUDE"], "categoria": "sentimento"}, {"palavra": "ORGULHO", "proibidas": ["CONQUISTA", "PEITO ESTUFADO", "VITÓRIA", "PAIS", "MÉRITO"], "categoria": "sentimento"}, {"palavra": "INVEJA", "proibidas": ["COMPARAÇÃO", "DESEJO", "OUTRO", "RIVALIDADE", "COBIÇA"], "categoria": "sentimento"}, {"palavra": "GRATIDÃO", "proibidas": ["AGRADECER", "OBRIGADO", "RECONHECIMENTO", "PRESENTE", "CARINHO"], "categoria": "sentimento"}, {"palavra": "EMPOLGAÇÃO", "proibidas": ["ANIMAÇÃO", "VIBRAÇÃO", "ENTUSIASMO", "PULAR", "COMEMORAR"], "categoria": "sentimento"}, {"palavra": "PENTEAR O CABELO", "proibidas": ["ESCOVA", "ESPELHO", "PENTE", "BANHEIRO", "FRANJA"], "categoria": "habito"}, {"palavra": "ACORDAR CEDO", "proibidas": ["DESPERTADOR", "MANHÃ", "SONO", "CAFÉ", "CANSADO"], "categoria": "habito"}, {"palavra": "ORGANIZAR O QUARTO", "proibidas": ["ARRUMAR", "BAGUNÇA", "GAVETA", "LIMPEZA", "ROUPA"], "categoria": "habito"}, {"palavra": "PASSEAR COM O CACHORRO", "proibidas": ["COLEIRA", "PARQUE", "GUIA", "CAMINHADA", "LATIDO"], "categoria": "habito"}, {"palavra": "CHECAR O CELULAR", "proibidas": ["NOTIFICAÇÃO", "TELA", "VÍCIO", "REDE SOCIAL", "DISTRAÇÃO"], "categoria": "habito"}, {"palavra": "CARTÃO DE CRÉDITO", "proibidas": ["PARCELAR", "LIMITE", "FATURA", "MÁQUINA", "COMPRA"], "categoria": "compra"}, {"palavra": "DESCONTO", "proibidas": ["PREÇO", "OFERTA", "ETIQUETA", "LOJA", "BARATO"], "categoria": "compra"}, {"palavra": "SACOLA", "proibidas": ["COMPRAS", "PLÁSTICO", "ALÇA", "MERCADO", "PESO"], "categoria": "compra"}, {"palavra": "NOTA FISCAL", "proibidas": ["COMPROVANTE", "LOJA", "GARANTIA", "PAPEL", "COMPRA"], "categoria": "compra"}, {"palavra": "LIQUIDAÇÃO", "proibidas": ["DESCONTO", "LOJA", "FILA", "PREÇO BAIXO", "PROMOÇÃO"], "categoria": "compra"}, {"palavra": "CANETA", "proibidas": ["TINTA", "ESCREVER", "PAPEL", "TAMPA", "ESCOLA"], "categoria": "objeto"}, {"palavra": "TESOURA", "proibidas": ["CORTAR", "LÂMINA", "PAPEL", "ARTESANATO", "PONTA"], "categoria": "objeto"}, {"palavra": "VELA", "proibidas": ["CERA", "PAVIO", "CHAMA", "ANIVERSÁRIO", "LUZ"], "categoria": "objeto"}, {"palavra": "PENTE", "proibidas": ["CABELO", "DENTE", "ESCOVAR", "PLÁSTICO", "ESPELHO"], "categoria": "objeto"}, {"palavra": "BOLSA", "proibidas": ["ALÇA", "CARTEIRA", "OMBRO", "ZÍPER", "ACESSÓRIO"], "categoria": "objeto"}, {"palavra": "CARTEIRA", "proibidas": ["DINHEIRO", "DOCUMENTO", "BOLSO", "CARTÃO", "COURO"], "categoria": "objeto"}, {"palavra": "GUARDA-ROUPA", "proibidas": ["ARMÁRIO", "CABIDE", "GAVETA", "QUARTO", "PORTA"], "categoria": "objeto"}, {"palavra": "LIVRO", "proibidas": ["PÁGINA", "LEITURA", "CAPA", "AUTOR", "BIBLIOTECA"], "categoria": "objeto"}, {"palavra": "CADERNO", "proibidas": ["FOLHA", "ESCOLA", "CAPA", "ESPIRAL", "ANOTAÇÃO"], "categoria": "objeto"}, {"palavra": "LÂMPADA", "proibidas": ["LUZ", "ROSCA", "FILAMENTO", "TETO", "ACENDER"], "categoria": "objeto"}, {"palavra": "ESCOVA DE DENTES", "proibidas": ["PASTA", "CERDAS", "BANHEIRO", "BOCA", "HIGIENE"], "categoria": "objeto"}, {"palavra": "GARRAFA", "proibidas": ["VIDRO", "TAMPA", "LÍQUIDO", "RÓTULO", "PLÁSTICO"], "categoria": "objeto"}, {"palavra": "PANE NO CARRO", "proibidas": ["QUEBRAR", "GUINCHO", "ESTRADA", "MOTOR", "PARAR"], "categoria": "cotidiano"}, {"palavra": "MOTOBOY", "proibidas": ["ENTREGA", "CAPACETE", "APLICATIVO", "CORRIDA", "MOCHILA TÉRMICA"], "categoria": "cotidiano"}, {"palavra": "PEDIDO DE COMIDA", "proibidas": ["APLICATIVO", "ENTREGA", "DELIVERY", "CARDÁPIO", "MOTOBOY"], "categoria": "cotidiano"}, {"palavra": "MUDANÇA DE CASA", "proibidas": ["CAIXA", "CAMINHÃO", "ENDEREÇO NOVO", "EMPACOTAR", "VIZINHOS"], "categoria": "cotidiano"}, {"palavra": "REENCONTRO", "proibidas": ["ABRAÇO", "SAUDADE", "SURPRESA", "EMOÇÃO", "AMIGOS"], "categoria": "cotidiano"}, {"palavra": "HALLOWEEN", "proibidas": ["FANTASIA", "DOCE OU TRAVESSURA", "ABÓBORA", "MEDO", "OUTUBRO"], "categoria": "festa"}, {"palavra": "PADEIRO", "proibidas": ["PÃO", "FORNO", "PADARIA", "FARINHA", "MADRUGADA"], "categoria": "profissao"}, {"palavra": "CARTEIRO", "proibidas": ["CORREIO", "ENTREGA", "ENVELOPE", "BICICLETA", "ENDEREÇO"], "categoria": "profissao"}, {"palavra": "ENFERMEIRO", "proibidas": ["HOSPITAL", "INJEÇÃO", "PLANTÃO", "CUIDADO", "UNIFORME"], "categoria": "profissao"}, {"palavra": "PRAÇA", "proibidas": ["BANCO", "ÁRVORE", "CRIANÇAS", "PIPOCA", "PASSEIO"], "categoria": "lugar"}, {"palavra": "MUSEU", "proibidas": ["QUADRO", "EXPOSIÇÃO", "HISTÓRIA", "GUIA", "ENTRADA"], "categoria": "lugar"}, {"palavra": "TEATRO", "proibidas": ["PALCO", "PEÇA", "PLATEIA", "CORTINA", "ATOR"], "categoria": "lugar"}, {"palavra": "FEIRA DE ARTESANATO", "proibidas": ["BARRACA", "ARTESÃO", "PEÇA ÚNICA", "PRAÇA", "DOMINGO"], "categoria": "lugar"}, {"palavra": "RODOVIÁRIA", "proibidas": ["ÔNIBUS", "PLATAFORMA", "PASSAGEM", "VIAGEM", "GUICHÊ"], "categoria": "lugar"}, {"palavra": "CONDOMÍNIO", "proibidas": ["PORTARIA", "VIZINHO", "PISCINA", "SÍNDICO", "MURO"], "categoria": "lugar"}, {"palavra": "ELEVADOR", "proibidas": ["BOTÃO", "ANDAR", "PRÉDIO", "ESPELHO", "PORTA"], "categoria": "lugar"}, {"palavra": "GARAGEM", "proibidas": ["CARRO", "PORTÃO", "FERRAMENTA", "ESTACIONAR", "TETO"], "categoria": "lugar"}, {"palavra": "VESTIÁRIO", "proibidas": ["ARMÁRIO", "UNIFORME", "CHUVEIRO", "TIME", "TROCA DE ROUPA"], "categoria": "lugar"}, {"palavra": "SALA DE AULA", "proibidas": ["CARTEIRA", "QUADRO", "PROFESSOR", "ALUNO", "LOUSA"], "categoria": "lugar"}, {"palavra": "PORTO ALEGRE", "proibidas": ["RIO GRANDE DO SUL", "CHURRASCO", "GAÚCHO", "PONTE", "SUL"], "categoria": "cidade"}, {"palavra": "BELO HORIZONTE", "proibidas": ["MINAS GERAIS", "MONTANHAS", "PÃO DE QUEIJO", "MINEIRO", "CAPITAL"], "categoria": "cidade"}, {"palavra": "GRAMADO", "proibidas": ["SERRA GAÚCHA", "FRIO", "CHOCOLATE", "FESTIVAL DE LUZES", "TURISMO"], "categoria": "cidade"}, {"palavra": "ARACAJU", "proibidas": ["SERGIPE", "NORDESTE", "PRAIA", "RIO", "CAPITAL"], "categoria": "cidade"}, {"palavra": "JOÃO PESSOA", "proibidas": ["PARAÍBA", "PRAIA", "NORDESTE", "PONTA DO SEIXAS", "CAPITAL"], "categoria": "cidade"}, {"palavra": "VITÓRIA", "proibidas": ["ESPÍRITO SANTO", "ILHA", "CAPIXABA", "BAÍA", "CAPITAL"], "categoria": "cidade"}, {"palavra": "GOIÂNIA", "proibidas": ["GOIÁS", "CENTRO-OESTE", "ARBORIZADA", "CAPITAL", "PLANEJADA"], "categoria": "cidade"}, {"palavra": "CAMPO GRANDE", "proibidas": ["MATO GROSSO DO SUL", "PANTANAL", "CAPITAL", "CENTRO-OESTE", "CERRADO"], "categoria": "cidade"}, {"palavra": "CHILE", "proibidas": ["ANDES", "VINHO", "SANTIAGO", "DESERTO DO ATACAMA", "TERREMOTO"], "categoria": "pais"}, {"palavra": "PERU", "proibidas": ["MACHU PICCHU", "INCA", "LHAMA", "ANDES", "LIMA"], "categoria": "pais"}, {"palavra": "COLÔMBIA", "proibidas": ["CAFÉ", "BOGOTÁ", "ESMERALDA", "CARTAGENA", "SALSA"], "categoria": "pais"}, {"palavra": "URUGUAI", "proibidas": ["MATE", "MONTEVIDÉU", "CHARRUA", "FRONTEIRA", "GAÚCHO"], "categoria": "pais"}, {"palavra": "ÍNDIA", "proibidas": ["CURRY", "TAJ MAHAL", "BOLLYWOOD", "RIO GANGES", "ESPECIARIAS"], "categoria": "pais"}, {"palavra": "EGITO", "proibidas": ["PIRÂMIDE", "FARAÓ", "DESERTO", "RIO NILO", "MÚMIA"], "categoria": "pais"}, {"palavra": "GRÉCIA", "proibidas": ["ATENAS", "DEUSES", "OLIMPÍADA", "ILHAS", "MITOLOGIA"], "categoria": "pais"}, {"palavra": "COREIA DO SUL", "proibidas": ["K-POP", "SEUL", "TECNOLOGIA", "KIMCHI", "ORIENTE"], "categoria": "pais"}, {"palavra": "PANDA", "proibidas": ["BAMBU", "CHINA", "PRETO E BRANCO", "URSO", "FOFO"], "categoria": "animal"}, {"palavra": "CANGURU", "proibidas": ["AUSTRÁLIA", "BOLSO", "SALTAR", "PATA", "FILHOTE"], "categoria": "animal"}, {"palavra": "RAPOSA", "proibidas": ["ASTUTA", "RABO", "CAÇADORA", "FLORESTA", "LARANJA"], "categoria": "animal"}, {"palavra": "LOBO", "proibidas": ["MATILHA", "UIVAR", "FLORESTA", "PRESAS", "LUA CHEIA"], "categoria": "animal"}, {"palavra": "URSO", "proibidas": ["HIBERNAÇÃO", "MEL", "FLORESTA", "GARRA", "PELUDO"], "categoria": "animal"}, {"palavra": "COELHO", "proibidas": ["ORELHA", "PATA", "CENOURA", "PÁSCOA", "FOFO"], "categoria": "animal"}, {"palavra": "ABELHA", "proibidas": ["MEL", "COLMEIA", "FERRÃO", "ZUMBIDO", "FLOR"], "categoria": "animal"}, {"palavra": "BORBOLETA", "proibidas": ["CASULO", "ASA", "LAGARTA", "VOAR", "COLORIDA"], "categoria": "animal"}, {"palavra": "POLVO", "proibidas": ["TENTÁCULO", "MAR", "TINTA", "INTELIGENTE", "OITO PERNAS"], "categoria": "animal"}, {"palavra": "STROGONOFF", "proibidas": ["CREME DE LEITE", "FRANGO", "ARROZ", "BATATA PALHA", "PANELA"], "categoria": "comida"}, {"palavra": "RISOTO", "proibidas": ["ARROZ", "ITALIANO", "CREMOSO", "QUEIJO", "VINHO"], "categoria": "comida"}, {"palavra": "TORTA", "proibidas": ["MASSA", "RECHEIO", "FORMA", "FATIA", "FORNO"], "categoria": "comida"}, {"palavra": "EMPADA", "proibidas": ["MASSA", "RECHEIO", "FORNINHO", "FESTA", "FORMINHA"], "categoria": "comida"}, {"palavra": "KIBE", "proibidas": ["CARNE", "TRIGO", "FRITO", "ÁRABE", "ESFIHA"], "categoria": "comida"}, {"palavra": "ESFIHA", "proibidas": ["MASSA", "ÁRABE", "RECHEIO", "ABERTA", "FORNO"], "categoria": "comida"}, {"palavra": "YAKISOBA", "proibidas": ["MACARRÃO", "JAPONÊS", "LEGUMES", "WOK", "MOLHO SHOYU"], "categoria": "comida"}, {"palavra": "FONDUE", "proibidas": ["QUEIJO", "CHOCOLATE", "PANELA", "ESPETO", "FRIO"], "categoria": "comida"}, {"palavra": "MARTELO", "proibidas": ["PREGO", "MARCENEIRO", "BATER", "FERRAMENTA", "CABO"], "categoria": "objeto"}, {"palavra": "FURADEIRA", "proibidas": ["PAREDE", "PARAFUSO", "BATERIA", "BROCA", "BURACO"], "categoria": "objeto"}, {"palavra": "EXTINTOR", "proibidas": ["INCÊNDIO", "PÓ", "EMERGÊNCIA", "VERMELHO", "PAREDE"], "categoria": "objeto"}, {"palavra": "LIXEIRA", "proibidas": ["LIXO", "TAMPA", "RECICLAGEM", "SACO", "MAU CHEIRO"], "categoria": "objeto"}, {"palavra": "VASO DE PLANTA", "proibidas": ["TERRA", "FLOR", "REGAR", "VARANDA", "CERÂMICA"], "categoria": "objeto"}, {"palavra": "PORTA-RETRATO", "proibidas": ["FOTO", "MOLDURA", "MEMÓRIA", "MESA", "VIDRO"], "categoria": "objeto"}, {"palavra": "CORTINA", "proibidas": ["JANELA", "TECIDO", "LUZ", "VARÃO", "SALA"], "categoria": "objeto"}, {"palavra": "PIPA", "proibidas": ["VENTO", "LINHA", "CRIANÇA", "CÉU", "RABIOLA"], "categoria": "objeto"}, {"palavra": "ASTRONAUTA", "proibidas": ["ESPAÇO", "FOGUETE", "LUA", "TRAJE", "GRAVIDADE"], "categoria": "profissao"}, {"palavra": "JUIZ", "proibidas": ["TRIBUNAL", "MARTELO", "PROCESSO", "SENTENÇA", "TOGA"], "categoria": "profissao"}, {"palavra": "ATLETA", "proibidas": ["TREINO", "MEDALHA", "COMPETIÇÃO", "MÚSCULO", "OLIMPÍADA"], "categoria": "profissao"}, {"palavra": "MODELO", "proibidas": ["PASSARELA", "FOTO", "DESFILE", "POSE", "MODA"], "categoria": "profissao"}, {"palavra": "MOTORISTA DE APLICATIVO", "proibidas": ["CARRO", "CORRIDA", "CELULAR", "PASSAGEIRO", "AVALIAÇÃO"], "categoria": "profissao"}, {"palavra": "SEGURANÇA", "proibidas": ["PORTARIA", "VIGIA", "CÂMERA", "UNIFORME", "RONDA"], "categoria": "profissao"}, {"palavra": "ESGRIMA", "proibidas": ["ESPADA", "DUELO", "MÁSCARA", "PISTA", "TOQUE"], "categoria": "esporte"}, {"palavra": "HANDEBOL", "proibidas": ["QUADRA", "GOL", "ARREMESSO", "TIME", "BOLA"], "categoria": "esporte"}, {"palavra": "REMO", "proibidas": ["BARCO", "RIO", "EQUIPE", "PÁ", "RAIA"], "categoria": "esporte"}, {"palavra": "XADREZ", "proibidas": ["TABULEIRO", "PEÇA", "REI", "XEQUE-MATE", "ESTRATÉGIA"], "categoria": "esporte"}, {"palavra": "SINUCA", "proibidas": ["TACO", "MESA", "BOLA", "CAÇAPA", "TRIÂNGULO"], "categoria": "esporte"}, {"palavra": "PODCAST", "proibidas": ["ÁUDIO", "EPISÓDIO", "MICROFONE", "OUVIR", "ENTREVISTA"], "categoria": "tecnologia"}, {"palavra": "HASHTAG", "proibidas": ["REDE SOCIAL", "TENDÊNCIA", "JOGO DA VELHA", "POST", "VIRAL"], "categoria": "internet"}, {"palavra": "QR CODE", "proibidas": ["CELULAR", "ESCANEAR", "QUADRADO", "LEITURA", "LINK"], "categoria": "tecnologia"}, {"palavra": "IMPRESSORA 3D", "proibidas": ["PLÁSTICO", "CAMADA", "MODELAGEM", "PROTÓTIPO", "FILAMENTO"], "categoria": "tecnologia"}, {"palavra": "REALIDADE VIRTUAL", "proibidas": ["ÓCULOS", "IMERSÃO", "JOGO", "SIMULAÇÃO", "3D"], "categoria": "tecnologia"}, {"palavra": "INTELIGÊNCIA ARTIFICIAL", "proibidas": ["ROBÔ", "ALGORITMO", "COMPUTADOR", "APRENDIZADO", "CHATBOT"], "categoria": "tecnologia"}, {"palavra": "HINO NACIONAL", "proibidas": ["BANDEIRA", "PÁTRIA", "CANTAR", "ESCOLA", "ORQUESTRA"], "categoria": "musica"}, {"palavra": "DISCO DE VINIL", "proibidas": ["AGULHA", "COLECIONADOR", "RETRÔ", "ÁLBUM", "ANTIGO"], "categoria": "musica"}, {"palavra": "DJ", "proibidas": ["PICK-UP", "FESTA", "MIXAGEM", "FONE", "ELETRÔNICA"], "categoria": "musica"}, {"palavra": "ACORDE", "proibidas": ["VIOLÃO", "NOTAS", "MÚSICA", "DEDO", "HARMONIA"], "categoria": "musica"}, {"palavra": "TÉDIO", "proibidas": ["NADA PARA FAZER", "PREGUIÇA", "DEMORA", "MONOTONIA", "BOCEJO"], "categoria": "sentimento"}, {"palavra": "ALÍVIO", "proibidas": ["RESPIRAR", "SUSPIRO", "TRANQUILIDADE", "LEVEZA", "RESOLVIDO"], "categoria": "sentimento"}, {"palavra": "CONFUSÃO", "proibidas": ["DÚVIDA", "BAGUNÇA", "DESORDEM", "MAL-ENTENDIDO", "LABIRINTO"], "categoria": "sentimento"}, {"palavra": "ADRENALINA", "proibidas": ["EMOÇÃO", "RADICAL", "VELOCIDADE", "MEDO", "AVENTURA"], "categoria": "sentimento"}, {"palavra": "NOSTALGIA", "proibidas": ["PASSADO", "LEMBRANÇA", "INFÂNCIA", "SAUDADE", "FOTO ANTIGA"], "categoria": "sentimento"}, {"palavra": "CURIOSIDADE", "proibidas": ["PERGUNTA", "EXPLORAR", "MISTÉRIO", "GATO", "DESCOBRIR"], "categoria": "sentimento"}, {"palavra": "ABRAÇAR", "proibidas": ["CARINHO", "BRAÇOS", "APERTAR", "SAUDAÇÃO", "AFETO"], "categoria": "acao"}, {"palavra": "BEIJAR", "proibidas": ["BOCA", "ROMANCE", "CARINHO", "NAMORADO", "SELINHO"], "categoria": "acao"}, {"palavra": "ASSOBIAR", "proibidas": ["BOCA", "SOM", "CHAMAR", "MÚSICA", "LÁBIOS"], "categoria": "acao"}, {"palavra": "ESPIAR", "proibidas": ["OLHAR", "ESCONDIDO", "JANELA", "CURIOSO", "FECHADURA"], "categoria": "acao"}, {"palavra": "LIMPAR", "proibidas": ["VASSOURA", "SABÃO", "ESPONJA", "ARRUMAR", "CASA"], "categoria": "acao"}, {"palavra": "ORGANIZAR", "proibidas": ["GAVETA", "ORDEM", "ARRUMAR", "CAIXA", "ETIQUETA"], "categoria": "acao"}, {"palavra": "LEILÃO", "proibidas": ["LANCE", "MARTELO", "ARREMATAR", "PLACA", "COMPRADOR"], "categoria": "festa"}, {"palavra": "RIFA", "proibidas": ["NÚMERO", "SORTEIO", "PRÊMIO", "BILHETE", "GANHADOR"], "categoria": "festa"}, {"palavra": "CIRCO", "proibidas": ["PALHAÇO", "TRAPÉZIO", "PIPOCA", "LONA", "MALABARISTA"], "categoria": "festa"}, {"palavra": "PARQUE DE DIVERSÕES", "proibidas": ["MONTANHA-RUSSA", "ALGODÃO DOCE", "BRINQUEDO", "INGRESSO", "ROLETA GIGANTE"], "categoria": "festa"}, {"palavra": "OCEANO", "proibidas": ["PROFUNDO", "ONDA", "PEIXE", "SALGADO", "IMENSO"], "categoria": "natureza"}, {"palavra": "GELEIRA", "proibidas": ["GELO", "POLO", "DERRETER", "FRIO", "ÁRTICO"], "categoria": "natureza"}, {"palavra": "PÂNTANO", "proibidas": ["LAMA", "JACARÉ", "ÁGUA PARADA", "MOSQUITO", "BREJO"], "categoria": "natureza"}, {"palavra": "SAVANA", "proibidas": ["ÁFRICA", "LEÃO", "CAPIM", "SECA", "MANADA"], "categoria": "natureza"}, {"palavra": "CAVERNA", "proibidas": ["ESCURA", "MORCEGO", "ECO", "PEDRA", "ESPELEOLOGIA"], "categoria": "natureza"}, {"palavra": "FUSCA", "proibidas": ["CARRO ANTIGO", "ALEMÃO", "REDONDO", "CLÁSSICO", "BESOURO"], "categoria": "veiculo"}, {"palavra": "VAN", "proibidas": ["TRANSPORTE", "PASSAGEIROS", "ESCOLAR", "MOTORISTA", "PORTA LATERAL"], "categoria": "veiculo"}, {"palavra": "LANCHA", "proibidas": ["VELOCIDADE", "MAR", "MOTOR", "PASSEIO", "IATE"], "categoria": "veiculo"}, {"palavra": "BONDE", "proibidas": ["TRILHO", "SANTA TERESA", "ANTIGO", "ELÉTRICO", "TURISTA"], "categoria": "veiculo"}, {"palavra": "MONTANHA-RUSSA", "proibidas": ["ADRENALINA", "TRILHO", "PARQUE", "ALTURA", "GRITO"], "categoria": "festa"}, {"palavra": "AQUÁRIO", "proibidas": ["PEIXE", "VIDRO", "ÁGUA", "DECORAÇÃO", "BOMBA DE AR"], "categoria": "objeto"}, {"palavra": "BAZAR", "proibidas": ["USADO", "DOAÇÃO", "BARATO", "ROUPA", "ORGANIZAÇÃO"], "categoria": "compra"}];
+
+/* -------------------------------------------------------------------------
+   2) VALIDAÇÃO — roda uma vez ao carregar, só em console (não trava a UI).
+   ------------------------------------------------------------------------- */
+(function validateDeck(cards){
+  const problems = [];
+  if (cards.length !== 500) problems.push(`Esperado 500 cartas, encontrado ${cards.length}.`);
+  const seen = new Set();
+  cards.forEach((c, i) => {
+    if (!c.palavra) problems.push(`Carta ${i} sem palavra principal.`);
+    if (!Array.isArray(c.proibidas) || c.proibidas.length !== 5) {
+      problems.push(`Carta "${c.palavra}" não tem exatamente 5 palavras proibidas.`);
+    }
+    const key = c.palavra.trim().toUpperCase();
+    if (seen.has(key)) problems.push(`Palavra principal duplicada: "${c.palavra}".`);
+    seen.add(key);
+  });
+  if (problems.length) {
+    console.warn("[NÃO PODE] Problemas encontrados no baralho:", problems);
+  } else {
+    console.log(`[NÃO PODE] Baralho validado: ${cards.length} cartas, todas OK.`);
+  }
+})(CARDS);
+
+/* -------------------------------------------------------------------------
+   3) SORTEIO — sempre aleatório, evitando repetir a carta imediatamente
+   anterior. Isolado de propósito: uma futura versão com "categorias
+   selecionadas" ou "dificuldade" só precisa trocar a lista de entrada aqui.
+   ------------------------------------------------------------------------- */
+const Deck = (function(){
+  let lastIndex = null;
+
+  function randomIndex(){
+    if (CARDS.length <= 1) return 0;
+    let idx;
+    do {
+      idx = Math.floor(Math.random() * CARDS.length);
+    } while (idx === lastIndex);
+    return idx;
+  }
+
+  return {
+    draw(){
+      const idx = randomIndex();
+      lastIndex = idx;
+      return CARDS[idx];
+    }
+  };
+})();
+
+/* -------------------------------------------------------------------------
+   4) ESTADO DO JOGO
+   ------------------------------------------------------------------------- */
+const ROUND_SECONDS = 60;
+
+const State = {
+  cardsPlayed: 0,
+  secondsLeft: ROUND_SECONDS,
+  timerId: null,
+  // HOOK: futuramente entrariam aqui "acertos", "erros", "jogadorAtual",
+  // "rodadaAtual", etc.
+};
+
+/* -------------------------------------------------------------------------
+   5) RENDER — elementos e telas
+   ------------------------------------------------------------------------- */
+const views = {
+  start: document.getElementById('view-start'),
+  game: document.getElementById('view-game'),
+  end: document.getElementById('view-end'),
+};
+
+const els = {
+  card: document.getElementById('card'),
+  palavra: document.getElementById('palavra'),
+  proibidas: document.getElementById('proibidas'),
+  startBtn: document.getElementById('startBtn'),
+  nextBtn: document.getElementById('nextBtn'),
+  endBtn: document.getElementById('endBtn'),
+  playAgainBtn: document.getElementById('playAgainBtn'),
+  cardCount: document.getElementById('cardCount'),
+  finalCount: document.getElementById('finalCount'),
+  timerChip: document.getElementById('timerChip'),
+};
+
+function formatTime(s){
+  const m = Math.floor(s / 60);
+  const r = s % 60;
+  return `${m}:${r.toString().padStart(2,'0')}`;
+}
+
+function stopTimer(){
+  if (State.timerId) {
+    clearInterval(State.timerId);
+    State.timerId = null;
+  }
+}
+
+function startTimer(){
+  stopTimer();
+  State.secondsLeft = ROUND_SECONDS;
+  els.timerChip.textContent = formatTime(State.secondsLeft);
+  els.timerChip.classList.remove('low');
+  State.timerId = setInterval(() => {
+    State.secondsLeft--;
+    els.timerChip.textContent = formatTime(State.secondsLeft);
+    if (State.secondsLeft <= 10) els.timerChip.classList.add('low');
+    if (State.secondsLeft <= 0) {
+      stopTimer();
+      endGame();
+    }
+  }, 1000);
+  // HOOK: uma versão futura com "rodadas" reiniciaria isso a cada rodada.
+}
+
+function showView(name){
+  Object.values(views).forEach(v => v.classList.remove('active'));
+  views[name].classList.add('active');
+}
+
+function paint(card){
+  els.palavra.textContent = card.palavra;
+  els.proibidas.innerHTML = '';
+  card.proibidas.forEach(p => {
+    const li = document.createElement('li');
+    const bar = document.createElement('span');
+    bar.className = 'ban-bar';
+    const text = document.createElement('span');
+    text.textContent = p;
+    li.appendChild(bar);
+    li.appendChild(text);
+    els.proibidas.appendChild(li);
+  });
+  els.cardCount.textContent = State.cardsPlayed;
+  // HOOK: cronômetro/rodada futura poderia reiniciar um timer aqui.
+}
+
+function startGame(){
+  State.cardsPlayed = 1;
+  showView('game');
+  els.card.classList.remove('leaving','entering');
+  paint(Deck.draw());
+  startTimer();
+}
+
+function nextCard(){
+  els.card.classList.remove('entering');
+  els.card.classList.add('leaving');
+  setTimeout(() => {
+    State.cardsPlayed++;
+    paint(Deck.draw());
+    els.card.classList.remove('leaving');
+    els.card.classList.add('entering');
+  }, 220);
+  // HOOK: aqui entraria "pontuação" (acertou/pulou) numa versão com times.
+}
+
+function endGame(){
+  stopTimer();
+  els.finalCount.textContent = State.cardsPlayed;
+  showView('end');
+}
+
+function playAgain(){
+  showView('start');
+}
+
+els.startBtn.addEventListener('click', startGame);
+els.nextBtn.addEventListener('click', nextCard);
+els.endBtn.addEventListener('click', endGame);
+els.playAgainBtn.addEventListener('click', playAgain);
+</script>
+</body>
+</html>
