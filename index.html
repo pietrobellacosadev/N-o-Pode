@@ -208,6 +208,46 @@
     font-weight:600;
   }
 
+  /* ---------- Timer toggle ---------- */
+  .toggle-row{
+    width:100%;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:2px 4px;
+  }
+  .toggle-label{
+    font-size:13.5px;
+    color:#E7DEF8;
+    font-weight:600;
+  }
+  .toggle-switch{
+    flex:0 0 auto;
+    width:48px;
+    height:28px;
+    border-radius:999px;
+    border:none;
+    cursor:pointer;
+    background:rgba(255,255,255,0.18);
+    position:relative;
+    padding:0;
+    transition: background 150ms ease;
+  }
+  .toggle-switch.on{ background:var(--accent); }
+  .toggle-knob{
+    position:absolute;
+    top:3px;
+    left:3px;
+    width:22px;
+    height:22px;
+    border-radius:50%;
+    background:#FFF6E9;
+    transition: transform 150ms ease;
+  }
+  .toggle-switch.on .toggle-knob{ transform: translateX(20px); }
+
+  .timer-chip.hidden{ display:none; }
+
   /* ---------- Timer ---------- */
   .timer-chip{
     font-family:'Fraunces', serif;
@@ -422,6 +462,14 @@
           <li><span class="rule-num">4</span><span class="rule-text">Você tem <strong>1 minuto</strong> para acertar o máximo de cartas possível.</span></li>
         </ul>
       </div>
+
+      <div class="toggle-row">
+        <span class="toggle-label">Cronômetro de 1 minuto</span>
+        <button class="toggle-switch on" id="timerToggle" role="switch" aria-checked="true">
+          <span class="toggle-knob"></span>
+        </button>
+      </div>
+
       <button class="big-btn" id="startBtn">INICIAR</button>
       <div class="panel-text">500 cartas · 5 palavras proibidas em cada</div>
     </div>
@@ -535,6 +583,7 @@ const State = {
   cardsPlayed: 0,
   secondsLeft: ROUND_SECONDS,
   timerId: null,
+  timerEnabled: true,
   // HOOK: futuramente entrariam aqui "acertos", "erros", "jogadorAtual",
   // "rodadaAtual", etc.
 };
@@ -559,6 +608,7 @@ const els = {
   cardCount: document.getElementById('cardCount'),
   finalCount: document.getElementById('finalCount'),
   timerChip: document.getElementById('timerChip'),
+  timerToggle: document.getElementById('timerToggle'),
 };
 
 function formatTime(s){
@@ -576,6 +626,11 @@ function stopTimer(){
 
 function startTimer(){
   stopTimer();
+  if (!State.timerEnabled) {
+    els.timerChip.classList.add('hidden');
+    return;
+  }
+  els.timerChip.classList.remove('hidden');
   State.secondsLeft = ROUND_SECONDS;
   els.timerChip.textContent = formatTime(State.secondsLeft);
   els.timerChip.classList.remove('low');
@@ -589,6 +644,12 @@ function startTimer(){
     }
   }, 1000);
   // HOOK: uma versão futura com "rodadas" reiniciaria isso a cada rodada.
+}
+
+function toggleTimer(){
+  State.timerEnabled = !State.timerEnabled;
+  els.timerToggle.classList.toggle('on', State.timerEnabled);
+  els.timerToggle.setAttribute('aria-checked', String(State.timerEnabled));
 }
 
 function showView(name){
@@ -647,6 +708,7 @@ els.startBtn.addEventListener('click', startGame);
 els.nextBtn.addEventListener('click', nextCard);
 els.endBtn.addEventListener('click', endGame);
 els.playAgainBtn.addEventListener('click', playAgain);
+els.timerToggle.addEventListener('click', toggleTimer);
 </script>
 </body>
 </html>
